@@ -2,198 +2,272 @@
 //  KeyboardView.swift
 //  KeyboardExtension
 //
-//  Created by 장주진 on 5/29/26.
+//  Created by 장주진 on 5/31/26.
 //
 
-import SwiftUI
+import UIKit
+import Combine
 
-struct KeyboardView: View {
+final class KeyboardView: UIView {
     
-    @ObservedObject var viewModel: KeyboardViewModel
+    // MARK: - Properties
     
-    var body: some View {
-        VStack(spacing: 0) {
-            // 상단 툴바 영역 (번역 기능 등 추후 추가)
-            toolbarArea
-            keyboardLayout
+    private let viewModel: KeyboardViewModel
+    private var cancellables = Set<AnyCancellable>()
+    
+    // UI 컴포넌트들
+    private let toolbarView = UIView()
+    private let toolbarLabel = UILabel()
+    private let keyboardStackView = UIStackView()
+    
+    // MARK: - Initialization
+    
+    init(viewModel: KeyboardViewModel) {
+        self.viewModel = viewModel
+        super.init(frame: .zero)
+        setupUI()
+        bindViewModel()
+    }
+    
+    required init?(coder: NSCoder) {
+        fatalError("init(coder:) has not been implemented")
+    }
+    
+    // MARK: - UI Setup
+    
+    private func setupUI() {
+        backgroundColor = UIColor.systemGray5
+        
+        setupToolbar()
+        setupKeyboardLayout()
+    }
+    
+    private func setupToolbar() {
+        toolbarView.backgroundColor = UIColor.systemGray6
+        toolbarView.translatesAutoresizingMaskIntoConstraints = false
+        addSubview(toolbarView)
+        
+        toolbarLabel.text = "TranslatorKeyboard"
+        toolbarLabel.font = .systemFont(ofSize: 12)
+        toolbarLabel.textColor = .secondaryLabel
+        toolbarLabel.translatesAutoresizingMaskIntoConstraints = false
+        toolbarView.addSubview(toolbarLabel)
+        
+        NSLayoutConstraint.activate([
+            toolbarView.topAnchor.constraint(equalTo: topAnchor),
+            toolbarView.leadingAnchor.constraint(equalTo: leadingAnchor),
+            toolbarView.trailingAnchor.constraint(equalTo: trailingAnchor),
+            toolbarView.heightAnchor.constraint(equalToConstant: 24),
             
-            Spacer(minLength: 0)
-        }
-        .background(Color(UIColor.systemGray5))
+            toolbarLabel.leadingAnchor.constraint(equalTo: toolbarView.leadingAnchor, constant: 8),
+            toolbarLabel.centerYAnchor.constraint(equalTo: toolbarView.centerYAnchor)
+        ])
     }
     
-    // MARK: - Toolbar Area
-    private var toolbarArea: some View {
-        HStack {
-            Text("TranslatorKeyboard")
-                .font(.caption)
-                .foregroundColor(.secondary)
-            Spacer()
-        }
-        .padding(.horizontal, 8)
-        .padding(.vertical, 4)
-        .background(Color(UIColor.systemGray6))
-    }
-    
-    // MARK: - Keyboard Layout
-    private var keyboardLayout: some View {
-        VStack(spacing: 8) {
-            firstRow
-            secondRow
-            thirdRow
-            fourthRow
-        }
-        .padding(.horizontal, 3)
-        .padding(.vertical, 8)
+    private func setupKeyboardLayout() {
+        keyboardStackView.axis = .vertical
+        keyboardStackView.spacing = 8
+        keyboardStackView.distribution = .fillEqually
+        keyboardStackView.translatesAutoresizingMaskIntoConstraints = false
+        addSubview(keyboardStackView)
+        
+        NSLayoutConstraint.activate([
+            keyboardStackView.topAnchor.constraint(equalTo: toolbarView.bottomAnchor, constant: 8),
+            keyboardStackView.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 3),
+            keyboardStackView.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -3),
+            keyboardStackView.bottomAnchor.constraint(equalTo: safeAreaLayoutGuide.bottomAnchor, constant: -8)
+        ])
+        
+        // 4개 행 추가
+        keyboardStackView.addArrangedSubview(createFirstRow())
+        keyboardStackView.addArrangedSubview(createSecondRow())
+        keyboardStackView.addArrangedSubview(createThirdRow())
+        keyboardStackView.addArrangedSubview(createFourthRow())
     }
     
     // MARK: - Keyboard Rows
-    private var firstRow: some View {
-        HStack(spacing: 6) {
-            ForEach(["Q", "W", "E", "R", "T", "Y", "U", "I", "O", "P"], id: \.self) { key in
-                KeyButton(key: key, viewModel: viewModel)
+    
+    private func createFirstRow() -> UIStackView {
+        let row = createRowStackView()
+        let keys = ["Q", "W", "E", "R", "T", "Y", "U", "I", "O", "P"]
+        
+        for key in keys {
+            let button = createKeyButton(key: key)
+            row.addArrangedSubview(button)
+        }
+        
+        return row
+    }
+    
+    private func createSecondRow() -> UIStackView {
+        let row = createRowStackView()
+        
+        let leftSpacer = UIView()
+        leftSpacer.widthAnchor.constraint(equalToConstant: 15).isActive = true
+        row.addArrangedSubview(leftSpacer)
+        
+        let keys = ["A", "S", "D", "F", "G", "H", "J", "K", "L"]
+        for key in keys {
+            let button = createKeyButton(key: key)
+            row.addArrangedSubview(button)
+        }
+        
+        let rightSpacer = UIView()
+        rightSpacer.widthAnchor.constraint(equalToConstant: 15).isActive = true
+        row.addArrangedSubview(rightSpacer)
+        
+        return row
+    }
+    
+    private func createThirdRow() -> UIStackView {
+        let row = createRowStackView()
+        
+        // Shift 키
+        let shiftButton = createSpecialButton(title: nil, systemImage: "shift", width: 42)
+        shiftButton.tag = 999 // Shift 식별용
+        shiftButton.addTarget(self, action: #selector(shiftTapped), for: .touchUpInside)
+        row.addArrangedSubview(shiftButton)
+        
+        let keys = ["Z", "X", "C", "V", "B", "N", "M"]
+        for key in keys {
+            let button = createKeyButton(key: key)
+            row.addArrangedSubview(button)
+        }
+        
+        // Delete 키
+        let deleteButton = createSpecialButton(title: nil, systemImage: "delete.left", width: 42)
+        deleteButton.addTarget(self, action: #selector(deleteTapped), for: .touchUpInside)
+        row.addArrangedSubview(deleteButton)
+        
+        return row
+    }
+    
+    private func createFourthRow() -> UIStackView {
+        let row = createRowStackView()
+        
+        // 123 키
+        let numberButton = createSpecialButton(title: "123", systemImage: nil, width: 70)
+        row.addArrangedSubview(numberButton)
+        
+        // Space 키
+        let spaceButton = createKeyButton(key: "space")
+        spaceButton.backgroundColor = .white
+        spaceButton.addTarget(self, action: #selector(spaceTapped), for: .touchUpInside)
+        row.addArrangedSubview(spaceButton)
+        
+        // Return 키
+        let returnButton = createSpecialButton(title: "return", systemImage: nil, width: 70)
+        returnButton.addTarget(self, action: #selector(returnTapped), for: .touchUpInside)
+        row.addArrangedSubview(returnButton)
+        
+        return row
+    }
+    
+    // MARK: - Button Factory Methods
+    
+    private func createRowStackView() -> UIStackView {
+        let stack = UIStackView()
+        stack.axis = .horizontal
+        stack.spacing = 6
+        stack.distribution = .fillEqually
+        return stack
+    }
+    
+    private func createKeyButton(key: String) -> UIButton {
+        let button = UIButton(type: .system)
+        button.setTitle(key.lowercased(), for: .normal)
+        button.setTitleColor(.label, for: .normal)
+        button.titleLabel?.font = .systemFont(ofSize: 20)
+        button.backgroundColor = .white
+        button.layer.cornerRadius = 5
+        button.layer.shadowColor = UIColor.black.cgColor
+        button.layer.shadowOpacity = 0.1
+        button.layer.shadowRadius = 1
+        button.layer.shadowOffset = CGSize(width: 0, height: 1)
+        button.tag = key.unicodeScalars.first?.value.hashValue ?? 0
+        button.addTarget(self, action: #selector(keyTapped(_:)), for: .touchUpInside)
+        return button
+    }
+    
+    private func createSpecialButton(title: String?, systemImage: String?, width: CGFloat) -> UIButton {
+        let button = UIButton(type: .system)
+        
+        if let title = title {
+            button.setTitle(title, for: .normal)
+            button.titleLabel?.font = .systemFont(ofSize: 16)
+        } else if let imageName = systemImage {
+            let config = UIImage.SymbolConfiguration(pointSize: 16)
+            button.setImage(UIImage(systemName: imageName, withConfiguration: config), for: .normal)
+        }
+        
+        button.setTitleColor(.label, for: .normal)
+        button.tintColor = .label
+        button.backgroundColor = UIColor.systemGray4
+        button.layer.cornerRadius = 5
+        button.widthAnchor.constraint(equalToConstant: width).isActive = true
+        return button
+    }
+    
+    // MARK: - Actions
+    
+    @objc private func keyTapped(_ sender: UIButton) {
+        guard let title = sender.title(for: .normal) else { return }
+        viewModel.handleKeyTap(title.uppercased())
+    }
+    
+    @objc private func shiftTapped() {
+        viewModel.handleShiftTap()
+    }
+    
+    @objc private func deleteTapped() {
+        viewModel.handleDeleteTap()
+    }
+    
+    @objc private func spaceTapped() {
+        viewModel.handleSpaceTap()
+    }
+    
+    @objc private func returnTapped() {
+        viewModel.handleReturnTap()
+    }
+    
+    // MARK: - ViewModel Binding
+    
+    private func bindViewModel() {
+        // Shift/Caps Lock 상태 변경 감지
+        viewModel.$isShiftEnabled
+            .combineLatest(viewModel.$isUppercase)
+            .sink { [weak self] isShift, isCaps in
+                self?.updateKeyboardCase(isShift: isShift, isCaps: isCaps)
+                self?.updateShiftButton(isShift: isShift, isCaps: isCaps)
+            }
+            .store(in: &cancellables)
+    }
+    
+    private func updateKeyboardCase(isShift: Bool, isCaps: Bool) {
+        let isUppercase = isShift || isCaps
+        
+        // 모든 문자 키 업데이트
+        for subview in keyboardStackView.arrangedSubviews {
+            guard let rowStack = subview as? UIStackView else { continue }
+            for button in rowStack.arrangedSubviews.compactMap({ $0 as? UIButton }) {
+                if button.tag != 999, // Shift 버튼 제외
+                   let title = button.title(for: .normal) {
+                    button.setTitle(isUppercase ? title.uppercased() : title.lowercased(), for: .normal)
+                }
             }
         }
     }
     
-    private var secondRow: some View {
-        HStack(spacing: 6) {
-            Spacer().frame(width: 15) // A 키 시작 위치 조정
-            ForEach(["A", "S", "D", "F", "G", "H", "J", "K", "L"], id: \.self) { key in
-                KeyButton(key: key, viewModel: viewModel)
+    private func updateShiftButton(isShift: Bool, isCaps: Bool) {
+        // Shift 버튼 찾기 (tag 999)
+        for subview in keyboardStackView.arrangedSubviews {
+            guard let rowStack = subview as? UIStackView else { continue }
+            if let shiftButton = rowStack.arrangedSubviews.compactMap({ $0 as? UIButton }).first(where: { $0.tag == 999 }) {
+                let imageName = isCaps ? "arrow.up.circle.fill" : (isShift ? "shift.fill" : "shift")
+                let config = UIImage.SymbolConfiguration(pointSize: 16)
+                shiftButton.setImage(UIImage(systemName: imageName, withConfiguration: config), for: .normal)
             }
-            Spacer().frame(width: 15)
         }
     }
-    
-    private var thirdRow: some View {
-        HStack(spacing: 6) {
-            // Shift 키
-            Button(action: {
-                viewModel.handleShiftTap()
-            }) {
-                Image(systemName: viewModel.isUppercase ? "arrow.up.circle.fill" : viewModel.isShiftEnabled ? "shift.fill" : "shift")
-                    .font(.system(size: 16))
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
-            }
-            .frame(width: 42, height: 42)
-            .background(Color(UIColor.systemGray4))
-            .foregroundColor(.primary)
-            .cornerRadius(5)
-            
-            ForEach(["Z", "X", "C", "V", "B", "N", "M"], id: \.self) { key in
-                KeyButton(key: key, viewModel: viewModel)
-            }
-            
-            // Delete 키
-            Button(action: {
-                viewModel.handleDeleteTap()
-            }) {
-                Image(systemName: "delete.left")
-                    .font(.system(size: 16))
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
-            }
-            .frame(width: 42, height: 42)
-            .background(Color(UIColor.systemGray4))
-            .foregroundColor(.primary)
-            .cornerRadius(5)
-        }
-    }
-    
-    private var fourthRow: some View {
-        HStack(spacing: 6) {
-            // 숫자/기호 전환 키 (추후 구현)
-            Button(action: {}) {
-                Text("123")
-                    .font(.system(size: 16))
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
-            }
-            .frame(width: 70, height: 42)
-            .background(Color(UIColor.systemGray4))
-            .foregroundColor(.primary)
-            .cornerRadius(5)
-            
-            // Space 키
-            Button(action: {
-                viewModel.handleSpaceTap()
-            }) {
-                Text("space")
-                    .font(.system(size: 16))
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
-            }
-            .frame(maxWidth: .infinity)
-            .frame(height: 42)
-            .background(Color.white)
-            .foregroundColor(.primary)
-            .cornerRadius(5)
-            
-            // Return 키
-            Button(action: {
-                viewModel.handleReturnTap()
-            }) {
-                Text("return")
-                    .font(.system(size: 16))
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
-            }
-            .frame(width: 70, height: 42)
-            .background(Color(UIColor.systemGray4))
-            .foregroundColor(.primary)
-            .cornerRadius(5)
-        }
-    }
-}
-
-// MARK: - KeyButton Component
-
-/// 개별 문자 키 버튼 컴포넌트
-struct KeyButton: View {
-    let key: String
-    @ObservedObject var viewModel: KeyboardViewModel
-    
-    var body: some View {
-        Button(action: {
-            viewModel.handleKeyTap(key)
-        }) {
-            Text(viewModel.isUppercase || viewModel.isShiftEnabled ? key.uppercased() : key.lowercased())
-                .font(.system(size: 20))
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
-        }
-        .frame(height: 42)
-        .background(Color.white)
-        .foregroundColor(.primary)
-        .cornerRadius(5)
-        .shadow(color: .black.opacity(0.1), radius: 1, x: 0, y: 1)
-    }
-}
-
-// MARK: - Preview
-
-#Preview {
-    KeyboardView(viewModel: KeyboardViewModel(textDocumentProxy: PreviewTextDocumentProxy()))
-        .frame(height: 250)
-}
-
-// MARK: - Preview Helper
-
-/// Preview 전용 Mock 텍스트 프록시
-class PreviewTextDocumentProxy: NSObject, UITextDocumentProxy {
-    var documentContextBeforeInput: String?
-    var documentContextAfterInput: String?
-    var selectedText: String?
-    var documentInputMode: UITextInputMode?
-    var documentIdentifier: UUID = UUID()
-    
-    var hasText: Bool { return false }
-    
-    func insertText(_ text: String) { 
-        print("Insert: \(text)") 
-    }
-    
-    func deleteBackward() { 
-        print("Delete") 
-    }
-    
-    func adjustTextPosition(byCharacterOffset offset: Int) {}
-    func setMarkedText(_ markedText: String, selectedRange: NSRange) {}
-    func unmarkText() {}
 }

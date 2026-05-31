@@ -6,47 +6,33 @@
 //
 
 import UIKit
-import SwiftUI
 
+/// 커스텀 키보드의 메인 뷰 컨트롤러
+/// UIInputViewController를 상속하여 iOS 시스템 키보드 인터페이스 제공
 class KeyboardViewController: UIInputViewController {
-    private var hostingController: UIHostingController<KeyboardView>?
+    
+    private var keyboardView: KeyboardView!
     
     override func viewDidLoad() {
         super.viewDidLoad()
-        setupKeyboardUI()
+        setupKeyboardView()
     }
     
-    private func setupKeyboardUI() {
-        self.view.backgroundColor = .clear
-        
+    private func setupKeyboardView() {
+        // ViewModel 생성
         let viewModel = KeyboardViewModel(textDocumentProxy: textDocumentProxy)
-        let keyboardView = KeyboardView(viewModel: viewModel)
-        let hostingController = UIHostingController(rootView: keyboardView)
-        self.hostingController = hostingController
         
-        hostingController.view.backgroundColor = .clear
-        hostingController.view.translatesAutoresizingMaskIntoConstraints = false
+        // KeyboardView 생성 및 추가
+        keyboardView = KeyboardView(viewModel: viewModel)
+        keyboardView.translatesAutoresizingMaskIntoConstraints = false
+        view.addSubview(keyboardView)
         
-        addChild(hostingController)
-        view.addSubview(hostingController.view)
-        
+        // AutoLayout 설정
         NSLayoutConstraint.activate([
-            hostingController.view.leadingAnchor.constraint(equalTo: view.leadingAnchor),
-            hostingController.view.trailingAnchor.constraint(equalTo: view.trailingAnchor),
-            hostingController.view.topAnchor.constraint(equalTo: view.topAnchor),
-            hostingController.view.bottomAnchor.constraint(equalTo: view.bottomAnchor)
+            keyboardView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
+            keyboardView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
+            keyboardView.topAnchor.constraint(equalTo: view.topAnchor),
+            keyboardView.bottomAnchor.constraint(equalTo: view.bottomAnchor)
         ])
-        
-        hostingController.didMove(toParent: self)
-        view.setNeedsLayout()
-        view.layoutIfNeeded()
-    }
-    
-    override func textWillChange(_ textInput: UITextInput?) {
-        // 텍스트 변경 전 처리
-    }
-    
-    override func textDidChange(_ textInput: UITextInput?) {
-        // 텍스트 변경 후 처리
     }
 }
