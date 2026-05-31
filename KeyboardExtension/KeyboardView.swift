@@ -14,8 +14,6 @@ final class KeyboardView: UIView {
     
     private let viewModel: KeyboardViewModel
     private var cancellables = Set<AnyCancellable>()
-    
-    // UI 컴포넌트들
     private let toolbarView = UIView()
     private let toolbarLabel = UILabel()
     private let keyboardStackView = UIStackView()
@@ -66,19 +64,18 @@ final class KeyboardView: UIView {
     
     private func setupKeyboardLayout() {
         keyboardStackView.axis = .vertical
-        keyboardStackView.spacing = 8
+        keyboardStackView.spacing = 11
         keyboardStackView.distribution = .fillEqually
         keyboardStackView.translatesAutoresizingMaskIntoConstraints = false
         addSubview(keyboardStackView)
         
         NSLayoutConstraint.activate([
             keyboardStackView.topAnchor.constraint(equalTo: toolbarView.bottomAnchor, constant: 8),
-            keyboardStackView.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 3),
-            keyboardStackView.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -3),
+            keyboardStackView.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 2),
+            keyboardStackView.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -2),
             keyboardStackView.bottomAnchor.constraint(equalTo: safeAreaLayoutGuide.bottomAnchor, constant: -8)
         ])
         
-        // 4개 행 추가
         keyboardStackView.addArrangedSubview(createFirstRow())
         keyboardStackView.addArrangedSubview(createSecondRow())
         keyboardStackView.addArrangedSubview(createThirdRow())
@@ -124,7 +121,7 @@ final class KeyboardView: UIView {
         
         // Shift 키
         let shiftButton = createSpecialButton(title: nil, systemImage: "shift", width: 42)
-        shiftButton.tag = 999 // Shift 식별용
+        shiftButton.tag = 999
         shiftButton.addTarget(self, action: #selector(shiftTapped), for: .touchUpInside)
         row.addArrangedSubview(shiftButton)
         
@@ -144,19 +141,17 @@ final class KeyboardView: UIView {
     
     private func createFourthRow() -> UIStackView {
         let row = createRowStackView()
+        row.distribution = .fill
         
-        // 123 키
-        let numberButton = createSpecialButton(title: "123", systemImage: nil, width: 70)
+        let numberButton = createSpecialButton(title: "123", systemImage: nil, width: 45)
         row.addArrangedSubview(numberButton)
         
-        // Space 키
         let spaceButton = createKeyButton(key: "space")
         spaceButton.backgroundColor = .white
         spaceButton.addTarget(self, action: #selector(spaceTapped), for: .touchUpInside)
         row.addArrangedSubview(spaceButton)
         
-        // Return 키
-        let returnButton = createSpecialButton(title: "return", systemImage: nil, width: 70)
+        let returnButton = createSpecialButton(title: "return", systemImage: nil, width: 85)
         returnButton.addTarget(self, action: #selector(returnTapped), for: .touchUpInside)
         row.addArrangedSubview(returnButton)
         
@@ -168,7 +163,7 @@ final class KeyboardView: UIView {
     private func createRowStackView() -> UIStackView {
         let stack = UIStackView()
         stack.axis = .horizontal
-        stack.spacing = 6
+        stack.spacing = 5
         stack.distribution = .fillEqually
         return stack
     }
@@ -177,13 +172,16 @@ final class KeyboardView: UIView {
         let button = UIButton(type: .system)
         button.setTitle(key.lowercased(), for: .normal)
         button.setTitleColor(.label, for: .normal)
-        button.titleLabel?.font = .systemFont(ofSize: 20)
+        button.titleLabel?.font = .systemFont(ofSize: 26, weight: .regular)
         button.backgroundColor = .white
-        button.layer.cornerRadius = 5
+        button.layer.cornerRadius = 6
         button.layer.shadowColor = UIColor.black.cgColor
         button.layer.shadowOpacity = 0.1
         button.layer.shadowRadius = 1
         button.layer.shadowOffset = CGSize(width: 0, height: 1)
+        if key != "space" {
+            button.heightAnchor.constraint(equalToConstant: 44).isActive = true
+        }
         button.tag = key.unicodeScalars.first?.value.hashValue ?? 0
         button.addTarget(self, action: #selector(keyTapped(_:)), for: .touchUpInside)
         return button
@@ -194,16 +192,17 @@ final class KeyboardView: UIView {
         
         if let title = title {
             button.setTitle(title, for: .normal)
-            button.titleLabel?.font = .systemFont(ofSize: 16)
+            button.titleLabel?.font = .systemFont(ofSize: 17, weight: .regular)
         } else if let imageName = systemImage {
-            let config = UIImage.SymbolConfiguration(pointSize: 16)
+            let config = UIImage.SymbolConfiguration(pointSize: 20, weight: .regular)
             button.setImage(UIImage(systemName: imageName, withConfiguration: config), for: .normal)
         }
         
         button.setTitleColor(.label, for: .normal)
         button.tintColor = .label
-        button.backgroundColor = UIColor.systemGray4
-        button.layer.cornerRadius = 5
+        button.backgroundColor = UIColor.systemGray3
+        button.layer.cornerRadius = 6
+        button.heightAnchor.constraint(equalToConstant: 42).isActive = true
         button.widthAnchor.constraint(equalToConstant: width).isActive = true
         return button
     }
@@ -234,7 +233,6 @@ final class KeyboardView: UIView {
     // MARK: - ViewModel Binding
     
     private func bindViewModel() {
-        // Shift/Caps Lock 상태 변경 감지
         viewModel.$isShiftEnabled
             .combineLatest(viewModel.$isUppercase)
             .sink { [weak self] isShift, isCaps in
@@ -247,11 +245,10 @@ final class KeyboardView: UIView {
     private func updateKeyboardCase(isShift: Bool, isCaps: Bool) {
         let isUppercase = isShift || isCaps
         
-        // 모든 문자 키 업데이트
         for subview in keyboardStackView.arrangedSubviews {
             guard let rowStack = subview as? UIStackView else { continue }
             for button in rowStack.arrangedSubviews.compactMap({ $0 as? UIButton }) {
-                if button.tag != 999, // Shift 버튼 제외
+                if button.tag != 999,
                    let title = button.title(for: .normal) {
                     button.setTitle(isUppercase ? title.uppercased() : title.lowercased(), for: .normal)
                 }
@@ -260,7 +257,6 @@ final class KeyboardView: UIView {
     }
     
     private func updateShiftButton(isShift: Bool, isCaps: Bool) {
-        // Shift 버튼 찾기 (tag 999)
         for subview in keyboardStackView.arrangedSubviews {
             guard let rowStack = subview as? UIStackView else { continue }
             if let shiftButton = rowStack.arrangedSubviews.compactMap({ $0 as? UIButton }).first(where: { $0.tag == 999 }) {
