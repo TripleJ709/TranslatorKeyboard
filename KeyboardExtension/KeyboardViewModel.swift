@@ -14,6 +14,7 @@ final class KeyboardViewModel: ObservableObject {
     @Published var currentText: String = ""
     @Published var isUppercase: Bool = false
     @Published var isShiftEnabled: Bool = false
+    @Published var currentKeyboardType: KeyboardType = .english
     
     // MARK: - Dependencies
     // 키보드 입력 전달 속성
@@ -80,5 +81,11 @@ final class KeyboardViewModel: ObservableObject {
     // 엔터키
     func handleReturnTap() {
         textDocumentProxy.insertText("\n")
+    }
+    
+    // MARK: - Keyboard Type Switch
+    
+    func toggleKeyboardType() {
+        currentKeyboardType = (currentKeyboardType == .english) ? .korean : .english
     }
 }
