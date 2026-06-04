@@ -42,31 +42,23 @@ class KeyboardViewController: UIInputViewController {
     }
     
     private func setupViewModel() {
-        // ViewModel 생성
         viewModel = KeyboardViewModel(textDocumentProxy: textDocumentProxy)
     }
     
-    /// ViewModel의 상태 변화를 View에 반영
     private func bindViewModelToView() {
-        // Shift 및 Caps Lock 상태 바인딩
         viewModel.$isShiftEnabled
             .combineLatest(viewModel.$isUppercase, viewModel.$currentKeyboardType)
             .sink { [weak self] isShift, isCapsLock, keyboardType in
                 if keyboardType == .english {
-                    // 영문: Shift/CapsLock에 따라 대소문자 변경
                     let isUppercase = isShift || isCapsLock
                     self?.keyboardView.updateKeyCase(isUppercase: isUppercase)
                 } else {
-                    // 한글: 쌍자음 표시
                     self?.keyboardView.updateKoreanDoubleConsonant(isShift: isShift)
                 }
-                
-                // Shift 버튼 아이콘은 항상 업데이트
                 self?.keyboardView.updateShiftButton(isShift: isShift, isCapsLock: isCapsLock)
             }
             .store(in: &cancellables)
         
-        // 키보드 타입 변경 바인딩
         viewModel.$currentKeyboardType
             .sink { [weak self] keyboardType in
                 self?.keyboardView.updateKeyboardType(keyboardType)

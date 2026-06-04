@@ -77,7 +77,6 @@ final class KeyboardView: UIView {
         for subview in keyboardStackView.arrangedSubviews {
             guard let rowStack = subview as? UIStackView else { continue }
             for button in rowStack.arrangedSubviews.compactMap({ $0 as? UIButton }) {
-                // 특수 버튼들 제외 (Shift, Language, Space, Return)
                 if button.tag != 999 &&   // Shift
                    button.tag != 1000 &&  // Language switch
                    button.tag != 1001 &&  // Space
@@ -89,7 +88,6 @@ final class KeyboardView: UIView {
         }
     }
     
-    /// 한글 쌍자음 표시 업데이트
     func updateKoreanDoubleConsonant(isShift: Bool) {
         let doubleConsonantMap: [String: String] = [
             "ㅂ": "ㅃ", "ㅈ": "ㅉ", "ㄷ": "ㄸ",
@@ -99,19 +97,15 @@ final class KeyboardView: UIView {
         for subview in keyboardStackView.arrangedSubviews {
             guard let rowStack = subview as? UIStackView else { continue }
             for button in rowStack.arrangedSubviews.compactMap({ $0 as? UIButton }) {
-                // 특수 버튼 제외
                 if button.tag != 999 && button.tag != 1000 && 
                    button.tag != 1001 && button.tag != 1002,
                    let title = button.title(for: .normal) {
                     
                     if isShift {
-                        // Shift 눌림: 쌍자음으로 변환
                         if let doubled = doubleConsonantMap[title] {
                             button.setTitle(doubled, for: .normal)
                         }
                     } else {
-                        // Shift 해제: 원래대로 복원
-                        // 역방향 맵 확인
                         let reverseMap = doubleConsonantMap.reduce(into: [String: String]()) { result, pair in
                             result[pair.value] = pair.key
                         }
