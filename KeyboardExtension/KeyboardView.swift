@@ -47,7 +47,7 @@ final class KeyboardView: UIView {
             firstRowKeys: ["ㅂ", "ㅈ", "ㄷ", "ㄱ", "ㅅ", "ㅛ", "ㅕ", "ㅑ", "ㅐ", "ㅔ"],
             secondRowKeys: ["ㅁ", "ㄴ", "ㅇ", "ㄹ", "ㅎ", "ㅗ", "ㅓ", "ㅏ", "ㅣ"],
             thirdRowKeys: ["ㅋ", "ㅌ", "ㅊ", "ㅍ", "ㅠ", "ㅜ", "ㅡ"],
-            languageSwitchTitle: "English"
+            languageSwitchTitle: "ABC"
         )
     }
     
@@ -77,9 +77,48 @@ final class KeyboardView: UIView {
         for subview in keyboardStackView.arrangedSubviews {
             guard let rowStack = subview as? UIStackView else { continue }
             for button in rowStack.arrangedSubviews.compactMap({ $0 as? UIButton }) {
-                if button.tag != 999,
+                // 특수 버튼들 제외 (Shift, Language, Space, Return)
+                if button.tag != 999 &&   // Shift
+                   button.tag != 1000 &&  // Language switch
+                   button.tag != 1001 &&  // Space
+                   button.tag != 1002,    // Return
                    let title = button.title(for: .normal) {
                     button.setTitle(isUppercase ? title.uppercased() : title.lowercased(), for: .normal)
+                }
+            }
+        }
+    }
+    
+    /// 한글 쌍자음 표시 업데이트
+    func updateKoreanDoubleConsonant(isShift: Bool) {
+        let doubleConsonantMap: [String: String] = [
+            "ㅂ": "ㅃ", "ㅈ": "ㅉ", "ㄷ": "ㄸ",
+            "ㄱ": "ㄲ", "ㅅ": "ㅆ"
+        ]
+        
+        for subview in keyboardStackView.arrangedSubviews {
+            guard let rowStack = subview as? UIStackView else { continue }
+            for button in rowStack.arrangedSubviews.compactMap({ $0 as? UIButton }) {
+                // 특수 버튼 제외
+                if button.tag != 999 && button.tag != 1000 && 
+                   button.tag != 1001 && button.tag != 1002,
+                   let title = button.title(for: .normal) {
+                    
+                    if isShift {
+                        // Shift 눌림: 쌍자음으로 변환
+                        if let doubled = doubleConsonantMap[title] {
+                            button.setTitle(doubled, for: .normal)
+                        }
+                    } else {
+                        // Shift 해제: 원래대로 복원
+                        // 역방향 맵 확인
+                        let reverseMap = doubleConsonantMap.reduce(into: [String: String]()) { result, pair in
+                            result[pair.value] = pair.key
+                        }
+                        if let original = reverseMap[title] {
+                            button.setTitle(original, for: .normal)
+                        }
+                    }
                 }
             }
         }
@@ -212,17 +251,20 @@ final class KeyboardView: UIView {
         let row = createRowStackView()
         row.distribution = .fill
         
-        let languageButtonWidth: CGFloat = layout.languageSwitchTitle == "English" ? 60 : 45
+        let languageButtonWidth: CGFloat = layout.languageSwitchTitle == "ABC" ? 60 : 45
         let languageButton = createSpecialButton(title: layout.languageSwitchTitle, systemImage: nil, width: languageButtonWidth)
+        languageButton.tag = 1000  // 언어 전환 버튼 - Shift 제외
         languageButton.addTarget(self, action: #selector(languageSwitchTapped), for: .touchUpInside)
         row.addArrangedSubview(languageButton)
         
         let spaceButton = createKeyButton(key: "space")
+        spaceButton.tag = 1001  // Space 버튼 - Shift 제외
         spaceButton.backgroundColor = .white
         spaceButton.addTarget(self, action: #selector(spaceTapped), for: .touchUpInside)
         row.addArrangedSubview(spaceButton)
         
         let returnButton = createSpecialButton(title: "return", systemImage: nil, width: 85)
+        returnButton.tag = 1002  // Return 버튼 - Shift 제외
         returnButton.addTarget(self, action: #selector(returnTapped), for: .touchUpInside)
         row.addArrangedSubview(returnButton)
         

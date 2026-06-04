@@ -50,10 +50,18 @@ class KeyboardViewController: UIInputViewController {
     private func bindViewModelToView() {
         // Shift 및 Caps Lock 상태 바인딩
         viewModel.$isShiftEnabled
-            .combineLatest(viewModel.$isUppercase)
-            .sink { [weak self] isShift, isCapsLock in
-                let isUppercase = isShift || isCapsLock
-                self?.keyboardView.updateKeyCase(isUppercase: isUppercase)
+            .combineLatest(viewModel.$isUppercase, viewModel.$currentKeyboardType)
+            .sink { [weak self] isShift, isCapsLock, keyboardType in
+                if keyboardType == .english {
+                    // 영문: Shift/CapsLock에 따라 대소문자 변경
+                    let isUppercase = isShift || isCapsLock
+                    self?.keyboardView.updateKeyCase(isUppercase: isUppercase)
+                } else {
+                    // 한글: 쌍자음 표시
+                    self?.keyboardView.updateKoreanDoubleConsonant(isShift: isShift)
+                }
+                
+                // Shift 버튼 아이콘은 항상 업데이트
                 self?.keyboardView.updateShiftButton(isShift: isShift, isCapsLock: isCapsLock)
             }
             .store(in: &cancellables)
