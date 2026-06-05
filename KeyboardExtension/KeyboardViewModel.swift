@@ -14,10 +14,12 @@ final class KeyboardViewModel: ObservableObject {
     @Published var currentText: String = ""
     @Published var isUppercase: Bool = false
     @Published var isShiftEnabled: Bool = false
+    @Published var currentKeyboardType: KeyboardType = .english
     
     // MARK: - Dependencies
-    // 키보드 입력 전달 속성
     private let textDocumentProxy: UITextDocumentProxy
+    private var hangulAutomata = HangulAutomata()
+    private var previousBuffer: [String] = []
     
     // MARK: - Combine
     private var cancellables = Set<AnyCancellable>()
@@ -32,22 +34,67 @@ final class KeyboardViewModel: ObservableObject {
     }
     
     // MARK: - Input Actions
-    // 문자키
+    
     func handleKeyTap(_ key: String) {
+        if currentKeyboardType == .korean {
+            hangulAutomata.hangulAutomata(key: key)
+            syncBufferToScreen()
+            return
+        }
+    
         let text = (isUppercase || isShiftEnabled) ? key.uppercased() : key.lowercased()
         textDocumentProxy.insertText(text)
+        
         if isShiftEnabled && !isUppercase {
             isShiftEnabled = false
         }
     }
     
+    private func syncBufferToScreen() {
+        let currentBuffer = hangulAutomata.buffer
+        let previousCount = previousBuffer.count
+        let currentCount = currentBuffer.count
+        
+        var deleteCount = 0
+        var insertTexts: [String] = []
+        
+        var commonCount = 0
+        for i in 0..<min(previousCount, currentCount) {
+            if previousBuffer[i] == currentBuffer[i] {
+                commonCount += 1
+            } else {
+                break
+            }
+        }
+        
+        deleteCount = previousCount - commonCount
+        
+        if currentCount > commonCount {
+            insertTexts = Array(currentBuffer[commonCount..<currentCount])
+        }
+        
+        for _ in 0..<deleteCount {
+            textDocumentProxy.deleteBackward()
+        }
+        
+        for text in insertTexts {
+            textDocumentProxy.insertText(text)
+        }
+        
+        previousBuffer = currentBuffer
+    }
+    
     // shift키
     func handleShiftTap() {
+        if currentKeyboardType == .korean {
+            isShiftEnabled.toggle()
+            return
+        }
+        
         let now = Date()
 
         if let lastTap = lastShiftTapTime,
            now.timeIntervalSince(lastTap) < doubleTapThreshold {
-            // 무조건 Caps Lock 활성화 (이미 Caps Lock이어도 유지)
             isUppercase = true
             isShiftEnabled = false
             lastShiftTapTime = nil
@@ -69,16 +116,40 @@ final class KeyboardViewModel: ObservableObject {
     
     // 백스페이스키
     func handleDeleteTap() {
+        if currentKeyboardType == .korean {
+            hangulAutomata.deleteBuffer()
+            syncBufferToScreen()
+            return
+        }
+        
         textDocumentProxy.deleteBackward()
     }
     
     // 스페이스키
     func handleSpaceTap() {
+        hangulAutomata = HangulAutomata()
+        previousBuffer = []
         textDocumentProxy.insertText(" ")
     }
     
     // 엔터키
     func handleReturnTap() {
+        hangulAutomata = HangulAutomata()
+        previousBuffer = []
         textDocumentProxy.insertText("\n")
+    }
+    
+    // MARK: - Keyboard Type Switch
+    
+    /// 키보드 타입 전환 (영문 ↔ 한글)
+    func toggleKeyboardType() {
+        hangulAutomata = HangulAutomata()
+        previousBuffer = []
+        
+        isShiftEnabled = false
+        isUppercase = false
+        lastShiftTapTime = nil
+        
+        currentKeyboardType = (currentKeyboardType == .english) ? .korean : .english
     }
 }

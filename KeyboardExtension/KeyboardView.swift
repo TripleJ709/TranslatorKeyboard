@@ -6,29 +6,127 @@
 //
 
 import UIKit
-import Combine
+
+protocol KeyboardViewDelegate: AnyObject {
+    func keyboardView(_ view: KeyboardView, didTapKey key: String)
+    func keyboardViewDidTapShift(_ view: KeyboardView)
+    func keyboardViewDidTapDelete(_ view: KeyboardView)
+    func keyboardViewDidTapSpace(_ view: KeyboardView)
+    func keyboardViewDidTapReturn(_ view: KeyboardView)
+    func keyboardViewDidTapLanguageSwitch(_ view: KeyboardView)
+}
 
 final class KeyboardView: UIView {
     
     // MARK: - Properties
     
-    private let viewModel: KeyboardViewModel
-    private var cancellables = Set<AnyCancellable>()
+    weak var delegate: KeyboardViewDelegate?
+    
     private let toolbarView = UIView()
     private let toolbarLabel = UILabel()
     private let keyboardStackView = UIStackView()
     
+    private(set) var currentKeyboardType: KeyboardType = .english
+    
+    // MARK: - Keyboard Layout Configuration
+    
+    private struct KeyboardLayout {
+        let firstRowKeys: [String]
+        let secondRowKeys: [String]
+        let thirdRowKeys: [String]
+        let languageSwitchTitle: String
+        
+        static let english = KeyboardLayout(
+            firstRowKeys: ["Q", "W", "E", "R", "T", "Y", "U", "I", "O", "P"],
+            secondRowKeys: ["A", "S", "D", "F", "G", "H", "J", "K", "L"],
+            thirdRowKeys: ["Z", "X", "C", "V", "B", "N", "M"],
+            languageSwitchTitle: "한글"
+        )
+        
+        static let korean = KeyboardLayout(
+            firstRowKeys: ["ㅂ", "ㅈ", "ㄷ", "ㄱ", "ㅅ", "ㅛ", "ㅕ", "ㅑ", "ㅐ", "ㅔ"],
+            secondRowKeys: ["ㅁ", "ㄴ", "ㅇ", "ㄹ", "ㅎ", "ㅗ", "ㅓ", "ㅏ", "ㅣ"],
+            thirdRowKeys: ["ㅋ", "ㅌ", "ㅊ", "ㅍ", "ㅠ", "ㅜ", "ㅡ"],
+            languageSwitchTitle: "ABC"
+        )
+    }
+    
+    private var currentLayout: KeyboardLayout {
+        currentKeyboardType == .english ? .english : .korean
+    }
+    
     // MARK: - Initialization
     
-    init(viewModel: KeyboardViewModel) {
-        self.viewModel = viewModel
-        super.init(frame: .zero)
+    override init(frame: CGRect) {
+        super.init(frame: frame)
         setupUI()
-        bindViewModel()
     }
     
     required init?(coder: NSCoder) {
         fatalError("init(coder:) has not been implemented")
+    }
+    
+    // MARK: - Public Methods
+
+    func updateKeyboardType(_ type: KeyboardType) {
+        currentKeyboardType = type
+        updateKeyboardLayout()
+    }
+    
+    func updateKeyCase(isUppercase: Bool) {
+        for subview in keyboardStackView.arrangedSubviews {
+            guard let rowStack = subview as? UIStackView else { continue }
+            for button in rowStack.arrangedSubviews.compactMap({ $0 as? UIButton }) {
+                if button.tag != 999 &&   // Shift
+                   button.tag != 1000 &&  // Language switch
+                   button.tag != 1001 &&  // Space
+                   button.tag != 1002,    // Return
+                   let title = button.title(for: .normal) {
+                    button.setTitle(isUppercase ? title.uppercased() : title.lowercased(), for: .normal)
+                }
+            }
+        }
+    }
+    
+    func updateKoreanDoubleConsonant(isShift: Bool) {
+        let doubleConsonantMap: [String: String] = [
+            "ㅂ": "ㅃ", "ㅈ": "ㅉ", "ㄷ": "ㄸ",
+            "ㄱ": "ㄲ", "ㅅ": "ㅆ"
+        ]
+        
+        for subview in keyboardStackView.arrangedSubviews {
+            guard let rowStack = subview as? UIStackView else { continue }
+            for button in rowStack.arrangedSubviews.compactMap({ $0 as? UIButton }) {
+                if button.tag != 999 && button.tag != 1000 && 
+                   button.tag != 1001 && button.tag != 1002,
+                   let title = button.title(for: .normal) {
+                    
+                    if isShift {
+                        if let doubled = doubleConsonantMap[title] {
+                            button.setTitle(doubled, for: .normal)
+                        }
+                    } else {
+                        let reverseMap = doubleConsonantMap.reduce(into: [String: String]()) { result, pair in
+                            result[pair.value] = pair.key
+                        }
+                        if let original = reverseMap[title] {
+                            button.setTitle(original, for: .normal)
+                        }
+                    }
+                }
+            }
+        }
+    }
+    
+    func updateShiftButton(isShift: Bool, isCapsLock: Bool) {
+        for subview in keyboardStackView.arrangedSubviews {
+            guard let rowStack = subview as? UIStackView else { continue }
+            if let shiftButton = rowStack.arrangedSubviews.compactMap({ $0 as? UIButton }).first(where: { $0.tag == 999 }) {
+                let imageName = isCapsLock ? "arrow.up.circle.fill" : (isShift ? "shift.fill" : "shift")
+                let config = UIImage.SymbolConfiguration(pointSize: 16)
+                shiftButton.setImage(UIImage(systemName: imageName, withConfiguration: config), for: .normal)
+            }
+        }
     }
     
     // MARK: - UI Setup
@@ -76,19 +174,25 @@ final class KeyboardView: UIView {
             keyboardStackView.bottomAnchor.constraint(equalTo: safeAreaLayoutGuide.bottomAnchor, constant: -8)
         ])
         
-        keyboardStackView.addArrangedSubview(createFirstRow())
-        keyboardStackView.addArrangedSubview(createSecondRow())
-        keyboardStackView.addArrangedSubview(createThirdRow())
-        keyboardStackView.addArrangedSubview(createFourthRow())
+        updateKeyboardLayout()
     }
     
-    // MARK: - Keyboard Rows
-    
-    private func createFirstRow() -> UIStackView {
-        let row = createRowStackView()
-        let keys = ["Q", "W", "E", "R", "T", "Y", "U", "I", "O", "P"]
+    private func updateKeyboardLayout() {
+        keyboardStackView.arrangedSubviews.forEach { $0.removeFromSuperview() }
+        let layout = currentLayout
         
-        for key in keys {
+        keyboardStackView.addArrangedSubview(createFirstRow(with: layout))
+        keyboardStackView.addArrangedSubview(createSecondRow(with: layout))
+        keyboardStackView.addArrangedSubview(createThirdRow(with: layout))
+        keyboardStackView.addArrangedSubview(createFourthRow(with: layout))
+    }
+    
+    // MARK: - Keyboard Rows (Unified)
+    
+    private func createFirstRow(with layout: KeyboardLayout) -> UIStackView {
+        let row = createRowStackView()
+        
+        for key in layout.firstRowKeys {
             let button = createKeyButton(key: key)
             row.addArrangedSubview(button)
         }
@@ -96,15 +200,14 @@ final class KeyboardView: UIView {
         return row
     }
     
-    private func createSecondRow() -> UIStackView {
+    private func createSecondRow(with layout: KeyboardLayout) -> UIStackView {
         let row = createRowStackView()
         
         let leftSpacer = UIView()
         leftSpacer.widthAnchor.constraint(equalToConstant: 15).isActive = true
         row.addArrangedSubview(leftSpacer)
         
-        let keys = ["A", "S", "D", "F", "G", "H", "J", "K", "L"]
-        for key in keys {
+        for key in layout.secondRowKeys {
             let button = createKeyButton(key: key)
             row.addArrangedSubview(button)
         }
@@ -116,7 +219,7 @@ final class KeyboardView: UIView {
         return row
     }
     
-    private func createThirdRow() -> UIStackView {
+    private func createThirdRow(with layout: KeyboardLayout) -> UIStackView {
         let row = createRowStackView()
         
         // Shift 키
@@ -125,8 +228,7 @@ final class KeyboardView: UIView {
         shiftButton.addTarget(self, action: #selector(shiftTapped), for: .touchUpInside)
         row.addArrangedSubview(shiftButton)
         
-        let keys = ["Z", "X", "C", "V", "B", "N", "M"]
-        for key in keys {
+        for key in layout.thirdRowKeys {
             let button = createKeyButton(key: key)
             row.addArrangedSubview(button)
         }
@@ -139,19 +241,24 @@ final class KeyboardView: UIView {
         return row
     }
     
-    private func createFourthRow() -> UIStackView {
+    private func createFourthRow(with layout: KeyboardLayout) -> UIStackView {
         let row = createRowStackView()
         row.distribution = .fill
         
-        let numberButton = createSpecialButton(title: "123", systemImage: nil, width: 45)
-        row.addArrangedSubview(numberButton)
+        let languageButtonWidth: CGFloat = layout.languageSwitchTitle == "ABC" ? 60 : 45
+        let languageButton = createSpecialButton(title: layout.languageSwitchTitle, systemImage: nil, width: languageButtonWidth)
+        languageButton.tag = 1000  // 언어 전환 버튼 - Shift 제외
+        languageButton.addTarget(self, action: #selector(languageSwitchTapped), for: .touchUpInside)
+        row.addArrangedSubview(languageButton)
         
         let spaceButton = createKeyButton(key: "space")
+        spaceButton.tag = 1001  // Space 버튼 - Shift 제외
         spaceButton.backgroundColor = .white
         spaceButton.addTarget(self, action: #selector(spaceTapped), for: .touchUpInside)
         row.addArrangedSubview(spaceButton)
         
         let returnButton = createSpecialButton(title: "return", systemImage: nil, width: 85)
+        returnButton.tag = 1002  // Return 버튼 - Shift 제외
         returnButton.addTarget(self, action: #selector(returnTapped), for: .touchUpInside)
         row.addArrangedSubview(returnButton)
         
@@ -211,59 +318,26 @@ final class KeyboardView: UIView {
     
     @objc private func keyTapped(_ sender: UIButton) {
         guard let title = sender.title(for: .normal) else { return }
-        viewModel.handleKeyTap(title.uppercased())
+        delegate?.keyboardView(self, didTapKey: title.uppercased())
     }
     
     @objc private func shiftTapped() {
-        viewModel.handleShiftTap()
+        delegate?.keyboardViewDidTapShift(self)
     }
     
     @objc private func deleteTapped() {
-        viewModel.handleDeleteTap()
+        delegate?.keyboardViewDidTapDelete(self)
     }
     
     @objc private func spaceTapped() {
-        viewModel.handleSpaceTap()
+        delegate?.keyboardViewDidTapSpace(self)
     }
     
     @objc private func returnTapped() {
-        viewModel.handleReturnTap()
+        delegate?.keyboardViewDidTapReturn(self)
     }
     
-    // MARK: - ViewModel Binding
-    
-    private func bindViewModel() {
-        viewModel.$isShiftEnabled
-            .combineLatest(viewModel.$isUppercase)
-            .sink { [weak self] isShift, isCaps in
-                self?.updateKeyboardCase(isShift: isShift, isCaps: isCaps)
-                self?.updateShiftButton(isShift: isShift, isCaps: isCaps)
-            }
-            .store(in: &cancellables)
-    }
-    
-    private func updateKeyboardCase(isShift: Bool, isCaps: Bool) {
-        let isUppercase = isShift || isCaps
-        
-        for subview in keyboardStackView.arrangedSubviews {
-            guard let rowStack = subview as? UIStackView else { continue }
-            for button in rowStack.arrangedSubviews.compactMap({ $0 as? UIButton }) {
-                if button.tag != 999,
-                   let title = button.title(for: .normal) {
-                    button.setTitle(isUppercase ? title.uppercased() : title.lowercased(), for: .normal)
-                }
-            }
-        }
-    }
-    
-    private func updateShiftButton(isShift: Bool, isCaps: Bool) {
-        for subview in keyboardStackView.arrangedSubviews {
-            guard let rowStack = subview as? UIStackView else { continue }
-            if let shiftButton = rowStack.arrangedSubviews.compactMap({ $0 as? UIButton }).first(where: { $0.tag == 999 }) {
-                let imageName = isCaps ? "arrow.up.circle.fill" : (isShift ? "shift.fill" : "shift")
-                let config = UIImage.SymbolConfiguration(pointSize: 16)
-                shiftButton.setImage(UIImage(systemName: imageName, withConfiguration: config), for: .normal)
-            }
-        }
+    @objc private func languageSwitchTapped() {
+        delegate?.keyboardViewDidTapLanguageSwitch(self)
     }
 }
