@@ -15,6 +15,7 @@ class KeyboardViewController: UIInputViewController {
     private var keyboardView: KeyboardView!
     private var viewModel: KeyboardViewModel!
     private var cancellables = Set<AnyCancellable>()
+    private var languageManager: AvailableLanguagesManager?
     
     // MARK: - Lifecycle
     
@@ -23,6 +24,7 @@ class KeyboardViewController: UIInputViewController {
         setupKeyboardView()
         setupViewModel()
         bindViewModelToView()
+        setupLanguageManager()
     }
     
     // MARK: - Setup
@@ -45,16 +47,24 @@ class KeyboardViewController: UIInputViewController {
         viewModel = KeyboardViewModel(textDocumentProxy: textDocumentProxy)
     }
     
+    private func setupLanguageManager() {
+        Task { @MainActor in
+            languageManager = AvailableLanguagesManager.shared
+            await languageManager?.fetchAvailableLanguages()
+            if let languages = languageManager?.availableLanguages {
+                keyboardView.updateAvailableLanguages(languages)
+            } else {
+                print("언어 목록 없음")
+            }
+        }
+    }
+    
     private func bindViewModelToView() {
         viewModel.$isShiftEnabled
-            .combineLatest(viewModel.$isUppercase, viewModel.$currentKeyboardType)
-            .sink { [weak self] isShift, isCapsLock, keyboardType in
-                if keyboardType == .english {
-                    let isUppercase = isShift || isCapsLock
-                    self?.keyboardView.updateKeyCase(isUppercase: isUppercase)
-                } else {
-                    self?.keyboardView.updateKoreanDoubleConsonant(isShift: isShift)
-                }
+            .combineLatest(viewModel.$isUppercase)
+            .sink { [weak self] isShift, isCapsLock in
+                let isUppercase = isShift || isCapsLock
+                self?.keyboardView.updateKeyCase(isUppercase: isUppercase)
                 self?.keyboardView.updateShiftButton(isShift: isShift, isCapsLock: isCapsLock)
             }
             .store(in: &cancellables)
@@ -93,5 +103,10 @@ extension KeyboardViewController: KeyboardViewDelegate {
     
     func keyboardViewDidTapLanguageSwitch(_ view: KeyboardView) {
         viewModel.toggleKeyboardType()
+    }
+    
+    func keyboardView(_ view: KeyboardView, didRequestTranslationTo language: Language) {
+        // TODO: 번역 로직 (다음 단계에서 구현)
+        print("번역 요청: \(language.displayName)")
     }
 }

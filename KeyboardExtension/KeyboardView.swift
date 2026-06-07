@@ -14,6 +14,7 @@ protocol KeyboardViewDelegate: AnyObject {
     func keyboardViewDidTapSpace(_ view: KeyboardView)
     func keyboardViewDidTapReturn(_ view: KeyboardView)
     func keyboardViewDidTapLanguageSwitch(_ view: KeyboardView)
+    func keyboardView(_ view: KeyboardView, didRequestTranslationTo language: Language)
 }
 
 final class KeyboardView: UIView {
@@ -22,11 +23,14 @@ final class KeyboardView: UIView {
     
     weak var delegate: KeyboardViewDelegate?
     
+    private let translationBar = UIView()
+    private let languageDropdownButton = UIButton(type: .system)
     private let toolbarView = UIView()
     private let toolbarLabel = UILabel()
     private let keyboardStackView = UIStackView()
-    
     private(set) var currentKeyboardType: KeyboardType = .english
+    private var availableLanguages: [Language] = []
+    private var selectedLanguage: Language?
     
     // MARK: - Keyboard Layout Configuration
     
@@ -134,8 +138,80 @@ final class KeyboardView: UIView {
     private func setupUI() {
         backgroundColor = UIColor.systemGray5
         
+        setupTranslationBar()
         setupToolbar()
         setupKeyboardLayout()
+    }
+    
+    private func setupTranslationBar() {
+        translationBar.backgroundColor = UIColor.systemGray6
+        translationBar.translatesAutoresizingMaskIntoConstraints = false
+        addSubview(translationBar)
+        
+        languageDropdownButton.translatesAutoresizingMaskIntoConstraints = false
+        languageDropdownButton.setTitle("번역 언어 선택", for: .normal)
+        languageDropdownButton.titleLabel?.font = .systemFont(ofSize: 15, weight: .medium)
+        languageDropdownButton.setTitleColor(.label, for: .normal)
+        languageDropdownButton.backgroundColor = .systemBackground
+        languageDropdownButton.layer.cornerRadius = 8
+        languageDropdownButton.layer.borderWidth = 1
+        languageDropdownButton.layer.borderColor = UIColor.systemGray4.cgColor
+        languageDropdownButton.contentHorizontalAlignment = .center
+        languageDropdownButton.showsMenuAsPrimaryAction = true
+        
+        translationBar.addSubview(languageDropdownButton)
+        
+        NSLayoutConstraint.activate([
+            translationBar.topAnchor.constraint(equalTo: topAnchor),
+            translationBar.leadingAnchor.constraint(equalTo: leadingAnchor),
+            translationBar.trailingAnchor.constraint(equalTo: trailingAnchor),
+            translationBar.heightAnchor.constraint(equalToConstant: 44),
+            
+            languageDropdownButton.leadingAnchor.constraint(equalTo: translationBar.leadingAnchor, constant: 8),
+            languageDropdownButton.trailingAnchor.constraint(equalTo: translationBar.trailingAnchor, constant: -8),
+            languageDropdownButton.centerYAnchor.constraint(equalTo: translationBar.centerYAnchor),
+            languageDropdownButton.heightAnchor.constraint(equalToConstant: 32)
+        ])
+    }
+    
+    func updateAvailableLanguages(_ languages: [Language]) {
+        availableLanguages = languages
+        updateDropdownMenu()
+    }
+    
+    private func updateDropdownMenu() {
+        guard !availableLanguages.isEmpty else { return }
+        
+        var menuActions: [UIAction] = []
+        
+        for language in availableLanguages {
+            let action = UIAction(
+                title: "\(language.displayName) (\(language.shortCode))",
+                handler: { [weak self] _ in
+                    self?.handleLanguageSelection(language)
+                }
+            )
+            menuActions.append(action)
+        }
+        
+        let menu = UIMenu(title: "번역 언어 선택", children: menuActions)
+        languageDropdownButton.menu = menu
+        
+        if selectedLanguage == nil, let firstLanguage = availableLanguages.first {
+            selectedLanguage = firstLanguage
+            updateDropdownButtonTitle()
+        }
+    }
+    
+    private func handleLanguageSelection(_ language: Language) {
+        selectedLanguage = language
+        updateDropdownButtonTitle()
+        delegate?.keyboardView(self, didRequestTranslationTo: language)
+    }
+    
+    private func updateDropdownButtonTitle() {
+        guard let selected = selectedLanguage else { return }
+        languageDropdownButton.setTitle("🌐 \(selected.displayName)", for: .normal)
     }
     
     private func setupToolbar() {
@@ -150,7 +226,7 @@ final class KeyboardView: UIView {
         toolbarView.addSubview(toolbarLabel)
         
         NSLayoutConstraint.activate([
-            toolbarView.topAnchor.constraint(equalTo: topAnchor),
+            toolbarView.topAnchor.constraint(equalTo: translationBar.bottomAnchor),
             toolbarView.leadingAnchor.constraint(equalTo: leadingAnchor),
             toolbarView.trailingAnchor.constraint(equalTo: trailingAnchor),
             toolbarView.heightAnchor.constraint(equalToConstant: 24),
