@@ -25,6 +25,7 @@ final class KeyboardView: UIView {
     
     private let translationBar = UIView()
     private let languageDropdownButton = UIButton(type: .system)
+    private let translateButton = UIButton(type: .system)
     private let toolbarView = UIView()
     private let toolbarLabel = UILabel()
     private let keyboardStackView = UIStackView()
@@ -148,6 +149,7 @@ final class KeyboardView: UIView {
         translationBar.translatesAutoresizingMaskIntoConstraints = false
         addSubview(translationBar)
         
+        // 드롭다운 버튼 설정
         languageDropdownButton.translatesAutoresizingMaskIntoConstraints = false
         languageDropdownButton.setTitle("번역 언어 선택", for: .normal)
         languageDropdownButton.titleLabel?.font = .systemFont(ofSize: 15, weight: .medium)
@@ -161,16 +163,34 @@ final class KeyboardView: UIView {
         
         translationBar.addSubview(languageDropdownButton)
         
+        // 번역 버튼 설정
+        translateButton.translatesAutoresizingMaskIntoConstraints = false
+        translateButton.setTitle("번역", for: .normal)
+        translateButton.titleLabel?.font = .systemFont(ofSize: 15, weight: .semibold)
+        translateButton.setTitleColor(.white, for: .normal)
+        translateButton.backgroundColor = .systemBlue
+        translateButton.layer.cornerRadius = 8
+        translateButton.addTarget(self, action: #selector(translateButtonTapped), for: .touchUpInside)
+        
+        translationBar.addSubview(translateButton)
+        
         NSLayoutConstraint.activate([
             translationBar.topAnchor.constraint(equalTo: topAnchor),
             translationBar.leadingAnchor.constraint(equalTo: leadingAnchor),
             translationBar.trailingAnchor.constraint(equalTo: trailingAnchor),
             translationBar.heightAnchor.constraint(equalToConstant: 44),
             
+            // 드롭다운 버튼 (왼쪽, 가변 너비)
             languageDropdownButton.leadingAnchor.constraint(equalTo: translationBar.leadingAnchor, constant: 8),
-            languageDropdownButton.trailingAnchor.constraint(equalTo: translationBar.trailingAnchor, constant: -8),
+            languageDropdownButton.trailingAnchor.constraint(equalTo: translateButton.leadingAnchor, constant: -8),
             languageDropdownButton.centerYAnchor.constraint(equalTo: translationBar.centerYAnchor),
-            languageDropdownButton.heightAnchor.constraint(equalToConstant: 32)
+            languageDropdownButton.heightAnchor.constraint(equalToConstant: 32),
+            
+            // 번역 버튼 (오른쪽, 고정 너비)
+            translateButton.trailingAnchor.constraint(equalTo: translationBar.trailingAnchor, constant: -8),
+            translateButton.centerYAnchor.constraint(equalTo: translationBar.centerYAnchor),
+            translateButton.heightAnchor.constraint(equalToConstant: 32),
+            translateButton.widthAnchor.constraint(equalToConstant: 60)
         ])
     }
     
@@ -203,10 +223,11 @@ final class KeyboardView: UIView {
         }
     }
     
+    /// 언어 선택 처리 (번역은 실행하지 않음)
     private func handleLanguageSelection(_ language: Language) {
         selectedLanguage = language
         updateDropdownButtonTitle()
-        delegate?.keyboardView(self, didRequestTranslationTo: language)
+        // delegate 호출 제거 - 번역 버튼을 눌러야만 번역 실행
     }
     
     private func updateDropdownButtonTitle() {
@@ -391,6 +412,14 @@ final class KeyboardView: UIView {
     }
     
     // MARK: - Actions
+    
+    @objc private func translateButtonTapped() {
+        guard let targetLanguage = selectedLanguage else {
+            print("⚠️ [KeyboardView] 번역 언어가 선택되지 않음")
+            return
+        }
+        delegate?.keyboardView(self, didRequestTranslationTo: targetLanguage)
+    }
     
     @objc private func keyTapped(_ sender: UIButton) {
         guard let title = sender.title(for: .normal) else { return }
