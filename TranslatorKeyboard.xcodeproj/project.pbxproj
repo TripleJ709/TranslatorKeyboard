@@ -8,6 +8,7 @@
 
 /* Begin PBXBuildFile section */
 		89002AF22FC8A2B800ED57FE /* KeyboardExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 89002AEB2FC8A2B800ED57FE /* KeyboardExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		89002B132FD469C400ED57FE /* Language.swift in Sources */ = {isa = PBXBuildFile; fileRef = 89002B122FD469C400ED57FE /* Language.swift */; };
 		89328BE02FC86BBF005EA87B /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 89328BD62FC86BBF005EA87B /* AppDelegate.swift */; };
 		89328BE12FC86BBF005EA87B /* SceneDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 89328BDD2FC86BBF005EA87B /* SceneDelegate.swift */; };
 		89328BE22FC86BBF005EA87B /* ViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 89328BDE2FC86BBF005EA87B /* ViewController.swift */; };
@@ -42,6 +43,7 @@
 
 /* Begin PBXFileReference section */
 		89002AEB2FC8A2B800ED57FE /* KeyboardExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = KeyboardExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+		89002B122FD469C400ED57FE /* Language.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Language.swift; sourceTree = "<group>"; };
 		89328BAE2FC6FDDA005EA87B /* TranslatorKeyboard.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = TranslatorKeyboard.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		89328BD62FC86BBF005EA87B /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		89328BD72FC86BBF005EA87B /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
@@ -99,6 +101,7 @@
 				89328BDF2FC86BBF005EA87B /* TranslatorKeyboard */,
 				89002AEC2FC8A2B800ED57FE /* KeyboardExtension */,
 				89328BAF2FC6FDDA005EA87B /* Products */,
+				89002B122FD469C400ED57FE /* Language.swift */,
 			);
 			sourceTree = "<group>";
 		};
@@ -234,6 +237,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				89002B132FD469C400ED57FE /* Language.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

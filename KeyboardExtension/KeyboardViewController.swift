@@ -7,6 +7,8 @@
 
 import UIKit
 import Combine
+import Translation
+import NaturalLanguage
 
 class KeyboardViewController: UIInputViewController {
     
@@ -15,6 +17,7 @@ class KeyboardViewController: UIInputViewController {
     private var keyboardView: KeyboardView!
     private var viewModel: KeyboardViewModel!
     private var cancellables = Set<AnyCancellable>()
+    private var languageManager: AvailableLanguagesManager?
     
     // MARK: - Lifecycle
     
@@ -23,6 +26,7 @@ class KeyboardViewController: UIInputViewController {
         setupKeyboardView()
         setupViewModel()
         bindViewModelToView()
+        setupLanguageManager()
     }
     
     // MARK: - Setup
@@ -45,16 +49,24 @@ class KeyboardViewController: UIInputViewController {
         viewModel = KeyboardViewModel(textDocumentProxy: textDocumentProxy)
     }
     
+    private func setupLanguageManager() {
+        Task { @MainActor in
+            languageManager = AvailableLanguagesManager.shared
+            await languageManager?.fetchAvailableLanguages()
+            if let languages = languageManager?.availableLanguages {
+                keyboardView.updateAvailableLanguages(languages)
+            } else {
+                print("언어 목록 없음")
+            }
+        }
+    }
+    
     private func bindViewModelToView() {
         viewModel.$isShiftEnabled
-            .combineLatest(viewModel.$isUppercase, viewModel.$currentKeyboardType)
-            .sink { [weak self] isShift, isCapsLock, keyboardType in
-                if keyboardType == .english {
-                    let isUppercase = isShift || isCapsLock
-                    self?.keyboardView.updateKeyCase(isUppercase: isUppercase)
-                } else {
-                    self?.keyboardView.updateKoreanDoubleConsonant(isShift: isShift)
-                }
+            .combineLatest(viewModel.$isUppercase)
+            .sink { [weak self] isShift, isCapsLock in
+                let isUppercase = isShift || isCapsLock
+                self?.keyboardView.updateKeyCase(isUppercase: isUppercase)
                 self?.keyboardView.updateShiftButton(isShift: isShift, isCapsLock: isCapsLock)
             }
             .store(in: &cancellables)
@@ -93,5 +105,86 @@ extension KeyboardViewController: KeyboardViewDelegate {
     
     func keyboardViewDidTapLanguageSwitch(_ view: KeyboardView) {
         viewModel.toggleKeyboardType()
+    }
+    
+    func keyboardView(_ view: KeyboardView, didRequestTranslationTo language: Language) {
+        print("🌐 [번역] 요청: \(language.displayName)")
+        
+        Task {
+            await performTranslation(to: language)
+        }
+    }
+    
+    /// 번역 수행
+    private func performTranslation(to targetLanguage: Language) async {
+        print("🚀 [번역] performTranslation 시작")
+        
+        // 1. textDocumentProxy 상태 확인
+        print("📋 [번역] documentContextBeforeInput: \(textDocumentProxy.documentContextBeforeInput ?? "nil")")
+        print("📋 [번역] documentContextAfterInput: \(textDocumentProxy.documentContextAfterInput ?? "nil")")
+        print("📋 [번역] selectedText: \(textDocumentProxy.selectedText ?? "nil")")
+        
+        // 2. 선택된 텍스트 가져오기
+        guard let selectedText = textDocumentProxy.selectedText, !selectedText.isEmpty else {
+            print("⚠️ [번역] 선택된 텍스트가 없습니다")
+            print("💡 [번역] 텍스트를 드래그하여 선택한 후 번역 버튼을 눌러주세요")
+            return
+        }
+        
+        print("📝 [번역] 선택된 텍스트: \(selectedText)")
+        
+        // 2. Translation 준비
+        let targetLocaleLanguage = Locale.Language(identifier: targetLanguage.languageCode)
+        
+        do {
+            // 3. 소스 언어 자동 감지 (NLLanguageRecognizer 사용 가정)
+            let sourceLanguageCode = detectLanguage(from: selectedText)
+            let sourceLocaleLanguage = Locale.Language(identifier: sourceLanguageCode)
+            
+            print("🔍 [번역] 감지된 소스 언어: \(sourceLanguageCode)")
+            
+            // 4. Translation Session 생성
+            let session = TranslationSession(
+                installedSource: sourceLocaleLanguage,
+                target: targetLocaleLanguage
+            )
+            
+            print("⏳ [번역] 번역 중... (\(sourceLanguageCode) → \(targetLanguage.languageCode))")
+            
+            // 5. 번역 요청 (단일 텍스트 번역 - 에러와 경고 해결의 핵심!)
+            let response = try await session.translate(selectedText)
+            let finalText = response.targetText
+            
+            print("✅ [번역] 완료: \(finalText)")
+            
+            // 6. 선택된 텍스트를 번역 결과로 교체
+            await MainActor.run {
+                textDocumentProxy.insertText(finalText)
+            }
+            
+        } catch {
+            // 이제 try await가 제대로 작동하므로 이 catch 블록도 정상적인 역할을 합니다.
+            print("❌ [번역] 에러: \(error.localizedDescription)")
+            
+            // Translation Error Code 확인
+            let nsError = error as NSError
+            if nsError.domain == "TranslationErrorDomain" && nsError.code == 11 {
+                print("⚠️ [번역] 번역 언어 모델이 다운로드되지 않음")
+                print("💡 [번역] 설정 → 일반 → 번역에서 '\(detectLanguage(from: selectedText)) ↔ \(targetLanguage.languageCode)' 언어 쌍을 다운로드하세요")
+            }
+        }
+    }
+    
+    /// 텍스트에서 언어 자동 감지
+    private func detectLanguage(from text: String) -> String {
+        let recognizer = NLLanguageRecognizer()
+        recognizer.processString(text)
+        
+        guard let dominantLanguage = recognizer.dominantLanguage else {
+            print("⚠️ [번역] 언어 감지 실패, 기본값 'en' 사용")
+            return "en"
+        }
+        
+        return dominantLanguage.rawValue
     }
 }
