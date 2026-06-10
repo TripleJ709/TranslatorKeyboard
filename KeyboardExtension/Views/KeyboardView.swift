@@ -26,12 +26,19 @@ final class KeyboardView: UIView {
     private let translationBar = UIView()
     private let languageDropdownButton = UIButton(type: .system)
     private let translateButton = UIButton(type: .system)
+    private let loadingIndicator = UIActivityIndicatorView(style: .medium)
     private let toolbarView = UIView()
     private let toolbarLabel = UILabel()
     private let keyboardStackView = UIStackView()
     private(set) var currentKeyboardType: KeyboardType = .english
     private var availableLanguages: [Language] = []
     private var selectedLanguage: Language?
+    
+    private var isTranslating: Bool = false {
+        didSet {
+            updateTranslateButtonState()
+        }
+    }
     
     // MARK: - Keyboard Layout Configuration
     
@@ -149,7 +156,6 @@ final class KeyboardView: UIView {
         translationBar.translatesAutoresizingMaskIntoConstraints = false
         addSubview(translationBar)
         
-        // 드롭다운 버튼 설정
         languageDropdownButton.translatesAutoresizingMaskIntoConstraints = false
         languageDropdownButton.setTitle("번역 언어 선택", for: .normal)
         languageDropdownButton.titleLabel?.font = .systemFont(ofSize: 15, weight: .medium)
@@ -162,8 +168,6 @@ final class KeyboardView: UIView {
         languageDropdownButton.showsMenuAsPrimaryAction = true
         
         translationBar.addSubview(languageDropdownButton)
-        
-        // 번역 버튼 설정
         translateButton.translatesAutoresizingMaskIntoConstraints = false
         translateButton.setTitle("번역", for: .normal)
         translateButton.titleLabel?.font = .systemFont(ofSize: 15, weight: .semibold)
@@ -174,23 +178,29 @@ final class KeyboardView: UIView {
         
         translationBar.addSubview(translateButton)
         
+        loadingIndicator.translatesAutoresizingMaskIntoConstraints = false
+        loadingIndicator.hidesWhenStopped = true
+        loadingIndicator.color = .white
+        translationBar.addSubview(loadingIndicator)
+        
         NSLayoutConstraint.activate([
             translationBar.topAnchor.constraint(equalTo: topAnchor),
             translationBar.leadingAnchor.constraint(equalTo: leadingAnchor),
             translationBar.trailingAnchor.constraint(equalTo: trailingAnchor),
             translationBar.heightAnchor.constraint(equalToConstant: 44),
-            
-            // 드롭다운 버튼 (왼쪽, 가변 너비)
+        
             languageDropdownButton.leadingAnchor.constraint(equalTo: translationBar.leadingAnchor, constant: 8),
             languageDropdownButton.trailingAnchor.constraint(equalTo: translateButton.leadingAnchor, constant: -8),
             languageDropdownButton.centerYAnchor.constraint(equalTo: translationBar.centerYAnchor),
             languageDropdownButton.heightAnchor.constraint(equalToConstant: 32),
             
-            // 번역 버튼 (오른쪽, 고정 너비)
             translateButton.trailingAnchor.constraint(equalTo: translationBar.trailingAnchor, constant: -8),
             translateButton.centerYAnchor.constraint(equalTo: translationBar.centerYAnchor),
             translateButton.heightAnchor.constraint(equalToConstant: 32),
-            translateButton.widthAnchor.constraint(equalToConstant: 60)
+            translateButton.widthAnchor.constraint(equalToConstant: 60),
+            
+            loadingIndicator.centerXAnchor.constraint(equalTo: translateButton.centerXAnchor),
+            loadingIndicator.centerYAnchor.constraint(equalTo: translateButton.centerYAnchor)
         ])
     }
     
@@ -233,6 +243,38 @@ final class KeyboardView: UIView {
     private func updateDropdownButtonTitle() {
         guard let selected = selectedLanguage else { return }
         languageDropdownButton.setTitle("🌐 \(selected.displayName)", for: .normal)
+    }
+    
+    func startTranslation() {
+        isTranslating = true
+    }
+    
+    func finishTranslation(success: Bool) {
+        isTranslating = false
+        showTranslationResult(success: success)
+    }
+    
+    private func updateTranslateButtonState() {
+        if isTranslating {
+            translateButton.setTitle("", for: .normal)
+            translateButton.isEnabled = false
+            translateButton.alpha = 0.7
+            loadingIndicator.startAnimating()
+        } else {
+            translateButton.setTitle("번역", for: .normal)
+            translateButton.isEnabled = true
+            translateButton.alpha = 1.0
+            loadingIndicator.stopAnimating()
+        }
+    }
+    
+    private func showTranslationResult(success: Bool) {
+        let icon = success ? "✓" : "✕"
+        translateButton.setTitle(icon, for: .normal)
+        
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { [weak self] in
+            self?.translateButton.setTitle("번역", for: .normal)
+        }
     }
     
     private func setupToolbar() {
