@@ -39,6 +39,10 @@ final class KeyboardViewModel: ObservableObject {
         if currentKeyboardType == .korean {
             hangulAutomata.hangulAutomata(key: key)
             syncBufferToScreen()
+            
+            if isShiftEnabled {
+                isShiftEnabled = false
+            }
             return
         }
     
@@ -117,6 +121,11 @@ final class KeyboardViewModel: ObservableObject {
     // 백스페이스키
     func handleDeleteTap() {
         if currentKeyboardType == .korean {
+            if hangulAutomata.inpStack.isEmpty && hangulAutomata.buffer.isEmpty {
+                textDocumentProxy.deleteBackward()
+                return
+            }
+            
             hangulAutomata.deleteBuffer()
             syncBufferToScreen()
             return
