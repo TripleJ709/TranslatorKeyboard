@@ -259,16 +259,16 @@ final class KeyboardView: UIView {
     
     private func setupKeyboardLayout() {
         keyboardStackView.axis = .vertical
-        keyboardStackView.spacing = 11
+        keyboardStackView.spacing = 12  // iOS 기본 키 간격
         keyboardStackView.distribution = .fillEqually
         keyboardStackView.translatesAutoresizingMaskIntoConstraints = false
         addSubview(keyboardStackView)
         
         NSLayoutConstraint.activate([
-            keyboardStackView.topAnchor.constraint(equalTo: toolbarView.bottomAnchor, constant: 8),
-            keyboardStackView.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 2),
-            keyboardStackView.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -2),
-            keyboardStackView.bottomAnchor.constraint(equalTo: safeAreaLayoutGuide.bottomAnchor, constant: -8)
+            keyboardStackView.topAnchor.constraint(equalTo: toolbarView.bottomAnchor, constant: 6),
+            keyboardStackView.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 3),
+            keyboardStackView.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -3),
+            keyboardStackView.bottomAnchor.constraint(equalTo: safeAreaLayoutGuide.bottomAnchor, constant: -5)
         ])
         
         updateKeyboardLayout()
@@ -298,20 +298,37 @@ final class KeyboardView: UIView {
     }
     
     private func createSecondRow(with layout: KeyboardLayout) -> UIStackView {
-        let row = createRowStackView()
+        let row = UIStackView()
+        row.axis = .horizontal
+        row.spacing = 6
+        row.distribution = .fill  // fillEqually에서 fill로 변경
         
+        // 왼쪽 스페이서 - 작은 고정 크기
         let leftSpacer = UIView()
-        leftSpacer.widthAnchor.constraint(equalToConstant: 15).isActive = true
+        leftSpacer.translatesAutoresizingMaskIntoConstraints = false
         row.addArrangedSubview(leftSpacer)
+        
+        // 2열 키들 컨테이너 (균등 분배)
+        let keysStack = UIStackView()
+        keysStack.axis = .horizontal
+        keysStack.spacing = 6
+        keysStack.distribution = .fillEqually
         
         for key in layout.secondRowKeys {
             let button = createKeyButton(key: key)
-            row.addArrangedSubview(button)
+            keysStack.addArrangedSubview(button)
         }
         
+        row.addArrangedSubview(keysStack)
+        
+        // 오른쪽 스페이서 - 왼쪽과 동일한 크기
         let rightSpacer = UIView()
-        rightSpacer.widthAnchor.constraint(equalToConstant: 15).isActive = true
+        rightSpacer.translatesAutoresizingMaskIntoConstraints = false
         row.addArrangedSubview(rightSpacer)
+        
+        // 스페이서 크기 설정 (작게)
+        leftSpacer.widthAnchor.constraint(equalToConstant: 18).isActive = true
+        rightSpacer.widthAnchor.constraint(equalTo: leftSpacer.widthAnchor).isActive = true
         
         return row
     }
@@ -319,8 +336,8 @@ final class KeyboardView: UIView {
     private func createThirdRow(with layout: KeyboardLayout) -> UIStackView {
         let row = createRowStackView()
         
-        // Shift 키
-        let shiftButton = createSpecialButton(title: nil, systemImage: "shift", width: 42)
+        // Shift 키 (iOS 표준 크기)
+        let shiftButton = createSpecialButton(title: nil, systemImage: "shift", width: 44)
         shiftButton.tag = 999
         shiftButton.addTarget(self, action: #selector(shiftTapped), for: .touchUpInside)
         row.addArrangedSubview(shiftButton)
@@ -330,8 +347,8 @@ final class KeyboardView: UIView {
             row.addArrangedSubview(button)
         }
         
-        // Delete 키
-        let deleteButton = createSpecialButton(title: nil, systemImage: "delete.left", width: 42)
+        // Delete 키 (iOS 표준 크기)
+        let deleteButton = createSpecialButton(title: nil, systemImage: "delete.left", width: 44)
         deleteButton.addTarget(self, action: #selector(deleteTapped), for: .touchUpInside)
         row.addArrangedSubview(deleteButton)
         
@@ -342,25 +359,37 @@ final class KeyboardView: UIView {
         let row = createRowStackView()
         row.distribution = .fill
         
-        let languageButtonWidth: CGFloat = layout.languageSwitchTitle == "ABC" ? 60 : 45
+        // 언어 전환 버튼 (iOS 표준 크기)
+        let languageButtonWidth: CGFloat = layout.languageSwitchTitle == "ABC" ? 52 : 42
         let languageButton = createSpecialButton(title: layout.languageSwitchTitle, systemImage: nil, width: languageButtonWidth)
-        languageButton.tag = 1000  // 언어 전환 버튼 - Shift 제외
+        languageButton.tag = 1000
         languageButton.addTarget(self, action: #selector(languageSwitchTapped), for: .touchUpInside)
         row.addArrangedSubview(languageButton)
         
-        // 스페이스 버튼 (특수 버튼으로 생성)
+        // 숫자 키 버튼 (iOS 표준)
+        let numberButton = createSpecialButton(title: "123", systemImage: nil, width: 42)
+        numberButton.tag = 1003
+        // TODO: 숫자 키보드 전환 기능 추가 시 활성화
+        row.addArrangedSubview(numberButton)
+        
+        // 스페이스 버튼 (iOS 표준 스타일)
         let spaceButton = UIButton(type: .system)
         spaceButton.setTitle("space", for: .normal)
         spaceButton.setTitleColor(.label, for: .normal)
-        spaceButton.titleLabel?.font = .systemFont(ofSize: 17, weight: .regular)
+        spaceButton.titleLabel?.font = .systemFont(ofSize: 16, weight: .regular)
         spaceButton.backgroundColor = .white
-        spaceButton.layer.cornerRadius = 6
+        spaceButton.layer.cornerRadius = 5
+        spaceButton.layer.shadowColor = UIColor.black.cgColor
+        spaceButton.layer.shadowOpacity = 0.15
+        spaceButton.layer.shadowRadius = 0
+        spaceButton.layer.shadowOffset = CGSize(width: 0, height: 1)
         spaceButton.tag = 1001
         spaceButton.addTarget(self, action: #selector(spaceTapped), for: .touchUpInside)
         row.addArrangedSubview(spaceButton)
         
-        let returnButton = createSpecialButton(title: "return", systemImage: nil, width: 85)
-        returnButton.tag = 1002  // Return 버튼 - Shift 제외
+        // Return 버튼 (iOS 표준 크기)
+        let returnButton = createSpecialButton(title: "return", systemImage: nil, width: 88)
+        returnButton.tag = 1002
         returnButton.addTarget(self, action: #selector(returnTapped), for: .touchUpInside)
         row.addArrangedSubview(returnButton)
         
@@ -372,7 +401,7 @@ final class KeyboardView: UIView {
     private func createRowStackView() -> UIStackView {
         let stack = UIStackView()
         stack.axis = .horizontal
-        stack.spacing = 5
+        stack.spacing = 6  // iOS 기본 키 간격
         stack.distribution = .fillEqually
         return stack
     }
@@ -381,15 +410,15 @@ final class KeyboardView: UIView {
         let button = UIButton(type: .system)
         button.setTitle(key.lowercased(), for: .normal)
         button.setTitleColor(.label, for: .normal)
-        button.titleLabel?.font = .systemFont(ofSize: 26, weight: .regular)
+        button.titleLabel?.font = .systemFont(ofSize: 23, weight: .regular)  // iOS 표준 폰트 크기
         button.backgroundColor = .white
-        button.layer.cornerRadius = 6
+        button.layer.cornerRadius = 5  // iOS 표준 둥근 모서리
         button.layer.shadowColor = UIColor.black.cgColor
-        button.layer.shadowOpacity = 0.1
-        button.layer.shadowRadius = 1
+        button.layer.shadowOpacity = 0.15
+        button.layer.shadowRadius = 0
         button.layer.shadowOffset = CGSize(width: 0, height: 1)
         if key != "space" {
-            button.heightAnchor.constraint(equalToConstant: 44).isActive = true
+            button.heightAnchor.constraint(equalToConstant: 42).isActive = true  // iOS 표준 키 높이
         }
         button.tag = key.unicodeScalars.first?.value.hashValue ?? 0
         button.addTarget(self, action: #selector(keyTapped(_:)), for: .touchUpInside)
@@ -401,16 +430,20 @@ final class KeyboardView: UIView {
         
         if let title = title {
             button.setTitle(title, for: .normal)
-            button.titleLabel?.font = .systemFont(ofSize: 17, weight: .regular)
+            button.titleLabel?.font = .systemFont(ofSize: 16, weight: .regular)  // iOS 표준 특수키 폰트
         } else if let imageName = systemImage {
-            let config = UIImage.SymbolConfiguration(pointSize: 20, weight: .regular)
+            let config = UIImage.SymbolConfiguration(pointSize: 18, weight: .medium)  // iOS 표준 아이콘 크기
             button.setImage(UIImage(systemName: imageName, withConfiguration: config), for: .normal)
         }
         
         button.setTitleColor(.label, for: .normal)
         button.tintColor = .label
-        button.backgroundColor = UIColor.systemGray3
-        button.layer.cornerRadius = 6
+        button.backgroundColor = UIColor.systemGray2  // iOS 특수키 색상
+        button.layer.cornerRadius = 5  // iOS 표준 둥근 모서리
+        button.layer.shadowColor = UIColor.black.cgColor
+        button.layer.shadowOpacity = 0.15
+        button.layer.shadowRadius = 0
+        button.layer.shadowOffset = CGSize(width: 0, height: 1)
         button.heightAnchor.constraint(equalToConstant: 42).isActive = true
         button.widthAnchor.constraint(equalToConstant: width).isActive = true
         return button
