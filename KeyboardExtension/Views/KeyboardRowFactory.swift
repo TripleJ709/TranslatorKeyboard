@@ -26,13 +26,17 @@ final class KeyboardRowFactory {
         row.axis = .horizontal
         row.spacing = 6
         row.distribution = .fill
+        row.backgroundColor = .clear
         
         let leftSpacer = UIView()
+        leftSpacer.backgroundColor = .clear
         let rightSpacer = UIView()
+        rightSpacer.backgroundColor = .clear
         let keysStack = UIStackView()
         keysStack.axis = .horizontal
         keysStack.spacing = 6
         keysStack.distribution = .fillEqually
+        keysStack.backgroundColor = .clear
         
         layout.secondRowKeys.forEach { keysStack.addArrangedSubview(createKeyButton(key: $0)) }
         
@@ -40,8 +44,13 @@ final class KeyboardRowFactory {
         row.addArrangedSubview(keysStack)
         row.addArrangedSubview(rightSpacer)
         
-        leftSpacer.widthAnchor.constraint(equalToConstant: 18).isActive = true
-        rightSpacer.widthAnchor.constraint(equalTo: leftSpacer.widthAnchor).isActive = true
+        let leftWidthConstraint = leftSpacer.widthAnchor.constraint(equalToConstant: 11)
+        leftWidthConstraint.priority = UILayoutPriority(999)
+        leftWidthConstraint.isActive = true
+        
+        let rightWidthConstraint = rightSpacer.widthAnchor.constraint(equalTo: leftSpacer.widthAnchor)
+        rightWidthConstraint.priority = UILayoutPriority(999)
+        rightWidthConstraint.isActive = true
         
         return row
     }
@@ -90,47 +99,41 @@ final class KeyboardRowFactory {
         stack.axis = .horizontal
         stack.spacing = 6
         stack.distribution = .fillEqually
+        stack.backgroundColor = .clear
         return stack
     }
     
-    private func createKeyButton(key: String) -> UIButton {
-        let button = UIButton(type: .system)
+    private func createKeyButton(key: String) -> KeyboardButton {
+        let button = KeyboardButton(type: .system)
         button.setTitle(key.lowercased(), for: .normal)
-        button.applyKeyStyle()
+        button.applyStyle(.key)
         button.tag = key.unicodeScalars.first?.value.hashValue ?? 0
         button.addTarget(self, action: #selector(keyTapped(_:)), for: .touchUpInside)
         return button
     }
     
-    private func createSpecialButton(title: String?, systemImage: String?, width: CGFloat) -> UIButton {
-        let button = UIButton(type: .system)
+    private func createSpecialButton(title: String?, systemImage: String?, width: CGFloat) -> KeyboardButton {
+        let button = KeyboardButton(type: .system)
         if let title = title {
             button.setTitle(title, for: .normal)
         } else if let imageName = systemImage {
             let config = UIImage.SymbolConfiguration(pointSize: 18, weight: .medium)
             button.setImage(UIImage(systemName: imageName, withConfiguration: config), for: .normal)
         }
-        button.applySpecialKeyStyle(width: width)
+        button.applyStyle(.special, width: width)
         return button
     }
     
-    private func createSpaceButton() -> UIButton {
-        let button = UIButton(type: .system)
+    private func createSpaceButton() -> KeyboardButton {
+        let button = KeyboardButton(type: .system)
         button.setTitle("space", for: .normal)
-        button.setTitleColor(.label, for: .normal)
-        button.titleLabel?.font = .systemFont(ofSize: 16, weight: .regular)
-        button.backgroundColor = .white
-        button.layer.cornerRadius = 5
-        button.layer.shadowColor = UIColor.black.cgColor
-        button.layer.shadowOpacity = 0.15
-        button.layer.shadowRadius = 0
-        button.layer.shadowOffset = CGSize(width: 0, height: 1)
+        button.applyStyle(.space)
         button.tag = ButtonTag.space.rawValue
         button.addTarget(self, action: #selector(spaceTapped), for: .touchUpInside)
         return button
     }
     
-    private func createReturnButton() -> UIButton {
+    private func createReturnButton() -> KeyboardButton {
         let button = createSpecialButton(title: "return", systemImage: nil, width: 88)
         button.tag = ButtonTag.return.rawValue
         button.addTarget(self, action: #selector(returnTapped), for: .touchUpInside)

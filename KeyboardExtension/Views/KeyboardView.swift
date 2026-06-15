@@ -46,6 +46,7 @@ final class KeyboardView: UIView {
         stack.axis = .vertical
         stack.spacing = 12
         stack.distribution = .fillEqually
+        stack.backgroundColor = .clear
         stack.translatesAutoresizingMaskIntoConstraints = false
         return stack
     }()
@@ -126,7 +127,7 @@ final class KeyboardView: UIView {
     // MARK: - UI Setup
     
     private func setupUI() {
-        backgroundColor = .systemGray5
+        backgroundColor = .clear
         
         addSubview(translationBar)
         addSubview(toolbarView)
@@ -138,14 +139,12 @@ final class KeyboardView: UIView {
     }
     
     private func setupConstraints() {
-        NSLayoutConstraint.activate([
-            // Translation Bar
+        let constraints = [
             translationBar.topAnchor.constraint(equalTo: topAnchor),
             translationBar.leadingAnchor.constraint(equalTo: leadingAnchor),
             translationBar.trailingAnchor.constraint(equalTo: trailingAnchor),
             translationBar.heightAnchor.constraint(equalToConstant: 44),
             
-            // Toolbar
             toolbarView.topAnchor.constraint(equalTo: translationBar.bottomAnchor),
             toolbarView.leadingAnchor.constraint(equalTo: leadingAnchor),
             toolbarView.trailingAnchor.constraint(equalTo: trailingAnchor),
@@ -154,18 +153,20 @@ final class KeyboardView: UIView {
             toolbarLabel.leadingAnchor.constraint(equalTo: toolbarView.leadingAnchor, constant: 8),
             toolbarLabel.centerYAnchor.constraint(equalTo: toolbarView.centerYAnchor),
             
-            // Keyboard Stack
             keyboardStackView.topAnchor.constraint(equalTo: toolbarView.bottomAnchor, constant: 6),
             keyboardStackView.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 3),
             keyboardStackView.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -3),
             keyboardStackView.bottomAnchor.constraint(equalTo: safeAreaLayoutGuide.bottomAnchor, constant: -5)
-        ])
+        ]
+        
+        constraints.forEach { $0.priority = UILayoutPriority(999) }
+        NSLayoutConstraint.activate(constraints)
     }
     
     private func updateKeyboardLayout() {
         keyboardStackView.arrangedSubviews.forEach { $0.removeFromSuperview() }
-        let layout = currentLayout
         
+        let layout = currentLayout
         keyboardStackView.addArrangedSubview(rowFactory.createFirstRow(with: layout))
         keyboardStackView.addArrangedSubview(rowFactory.createSecondRow(with: layout))
         keyboardStackView.addArrangedSubview(rowFactory.createThirdRow(with: layout))

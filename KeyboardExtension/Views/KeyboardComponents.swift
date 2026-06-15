@@ -61,32 +61,70 @@ enum KeyboardButtonHelper {
     }
 }
 
-// MARK: - UIButton+KeyboardStyle
+// MARK: - KeyboardButton (성능 최적화된 커스텀 버튼)
 
-extension UIButton {
-    func applyKeyStyle() {
-        setTitleColor(.label, for: .normal)
-        titleLabel?.font = .systemFont(ofSize: 23, weight: .regular)
-        backgroundColor = .white
-        layer.cornerRadius = 5
-        layer.shadowColor = UIColor.black.cgColor
-        layer.shadowOpacity = 0.15
-        layer.shadowRadius = 0
-        layer.shadowOffset = CGSize(width: 0, height: 1)
-        heightAnchor.constraint(equalToConstant: 42).isActive = true
+final class KeyboardButton: UIButton {
+    
+    enum KeyboardButtonStyle {
+        case key
+        case special
+        case space
     }
     
-    func applySpecialKeyStyle(width: CGFloat) {
-        setTitleColor(.label, for: .normal)
-        tintColor = .label
-        backgroundColor = .systemGray2
-        titleLabel?.font = .systemFont(ofSize: 16, weight: .regular)
+    private var style: KeyboardButtonStyle = .key
+    private var fixedWidth: CGFloat?
+    
+    override func layoutSubviews() {
+        super.layoutSubviews()
+        
+        if layer.shadowOpacity > 0 {
+            layer.shadowPath = UIBezierPath(
+                roundedRect: bounds,
+                cornerRadius: layer.cornerRadius
+            ).cgPath
+        }
+    }
+    
+    func applyStyle(_ style: KeyboardButtonStyle, width: CGFloat? = nil) {
+        self.style = style
+        self.fixedWidth = width
         layer.cornerRadius = 5
         layer.shadowColor = UIColor.black.cgColor
         layer.shadowOpacity = 0.15
         layer.shadowRadius = 0
         layer.shadowOffset = CGSize(width: 0, height: 1)
-        heightAnchor.constraint(equalToConstant: 42).isActive = true
-        widthAnchor.constraint(equalToConstant: width).isActive = true
+        
+        // 스타일별 설정
+        switch style {
+        case .key:
+            setTitleColor(.label, for: .normal)
+            titleLabel?.font = .systemFont(ofSize: 23, weight: .regular)
+            backgroundColor = .white
+            
+            let heightConstraint = heightAnchor.constraint(equalToConstant: 42)
+            heightConstraint.priority = .defaultHigh
+            heightConstraint.isActive = true
+            
+        case .special:
+            setTitleColor(.label, for: .normal)
+            tintColor = .label
+            backgroundColor = .systemGray2
+            titleLabel?.font = .systemFont(ofSize: 16, weight: .regular)
+            
+            let heightConstraint = heightAnchor.constraint(equalToConstant: 42)
+            heightConstraint.priority = .defaultHigh
+            heightConstraint.isActive = true
+            
+            if let width = width {
+                let widthConstraint = widthAnchor.constraint(equalToConstant: width)
+                widthConstraint.priority = UILayoutPriority(999)
+                widthConstraint.isActive = true
+            }
+            
+        case .space:
+            setTitleColor(.label, for: .normal)
+            titleLabel?.font = .systemFont(ofSize: 16, weight: .regular)
+            backgroundColor = .white
+        }
     }
 }

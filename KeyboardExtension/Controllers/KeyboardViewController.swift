@@ -26,17 +26,52 @@ class KeyboardViewController: UIInputViewController {
         setupKeyboardView()
         setupViewModel()
         bindViewModelToView()
-        setupLanguageManager()
+        
+        DispatchQueue.main.async { [weak self] in
+            self?.setupLanguageManagerAsync()
+        }
+    }
+    
+    override func viewDidLayoutSubviews() {
+        super.viewDidLayoutSubviews()
+        keyboardView.layoutIfNeeded()
+    }
+    
+    override func viewWillAppear(_ animated: Bool) {
+        super.viewWillAppear(animated)
+        updateKeyboardHeight()
+    }
+    
+    override func viewDidAppear(_ animated: Bool) {
+        super.viewDidAppear(animated)
+    }
+    
+    override func viewDidDisappear(_ animated: Bool) {
+        super.viewDidDisappear(animated)
+    }
+    
+    private func updateKeyboardHeight() {
+        let estimatedHeight: CGFloat = 291
+        
+        if let heightConstraint = view.constraints.first(where: { $0.firstAttribute == .height }) {
+            heightConstraint.constant = estimatedHeight
+        } else {
+            let constraint = view.heightAnchor.constraint(equalToConstant: estimatedHeight)
+            constraint.priority = .defaultHigh
+            constraint.isActive = true
+        }
     }
     
     // MARK: - Setup
     
     private func setupKeyboardView() {
+        view.backgroundColor = .clear
+        inputView?.backgroundColor = .clear
+        
         keyboardView = KeyboardView()
         keyboardView.translatesAutoresizingMaskIntoConstraints = false
         view.addSubview(keyboardView)
         
-        // Delegate 직접 설정
         keyboardView.translationBar.delegate = self
         keyboardView.rowFactory.delegate = self
         
@@ -46,20 +81,33 @@ class KeyboardViewController: UIInputViewController {
             keyboardView.topAnchor.constraint(equalTo: view.topAnchor),
             keyboardView.bottomAnchor.constraint(equalTo: view.bottomAnchor)
         ])
+        
+        view.setNeedsLayout()
+        view.layoutIfNeeded()
     }
     
     private func setupViewModel() {
         viewModel = KeyboardViewModel(textDocumentProxy: textDocumentProxy)
     }
     
-    private func setupLanguageManager() {
-        Task { @MainActor in
-            languageManager = AvailableLanguagesManager.shared
-            await languageManager?.fetchAvailableLanguages()
-            if let languages = languageManager?.availableLanguages {
-                keyboardView.updateAvailableLanguages(languages)
-            } else {
-                print("언어 목록 없음")
+    private func setupLanguageManagerAsync() {
+        Task.detached(priority: .userInitiated) {
+            let manager = AvailableLanguagesManager.shared
+            
+            let cachedLanguages = manager.availableLanguages
+            if !cachedLanguages.isEmpty {
+                await MainActor.run {
+                    self.languageManager = manager
+                    self.keyboardView.updateAvailableLanguages(cachedLanguages)
+                }
+            }
+            
+            await manager.fetchAvailableLanguages()
+            let systemLanguages = manager.availableLanguages
+            
+            await MainActor.run {
+                self.languageManager = manager
+                self.keyboardView.updateAvailableLanguages(systemLanguages)
             }
         }
     }
@@ -72,7 +120,6 @@ class KeyboardViewController: UIInputViewController {
                 self?.keyboardView.updateKeyCase(isUppercase: isUppercase)
                 self?.keyboardView.updateShiftButton(isShift: isShift, isCapsLock: isCapsLock)
                 
-                // 한글 모드에서 Shift 상태에 따라 쌍자음 처리
                 if keyboardType == .korean {
                     self?.keyboardView.updateKoreanDoubleConsonant(isShift: isShift)
                 }
@@ -86,6 +133,7 @@ class KeyboardViewController: UIInputViewController {
             .store(in: &cancellables)
     }
 }
+
 
 // MARK: - TranslationBarViewDelegate
 

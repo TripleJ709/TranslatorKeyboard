@@ -72,16 +72,41 @@ final class TranslationBarView: UIView {
     }
     
     private func setupConstraints() {
+        // ⚡️ 모든 제약 조건 우선순위를 낮춰서 width=0 초기 상태에서도 유연하게 대응
+        
+        let leadingConstraint = languageDropdownButton.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 8)
+        leadingConstraint.priority = UILayoutPriority(999)
+        
+        let trailingToButtonConstraint = languageDropdownButton.trailingAnchor.constraint(equalTo: translateButton.leadingAnchor, constant: -8)
+        trailingToButtonConstraint.priority = UILayoutPriority(999)
+        
+        let centerYConstraint1 = languageDropdownButton.centerYAnchor.constraint(equalTo: centerYAnchor)
+        centerYConstraint1.priority = UILayoutPriority(999)
+        
+        let heightConstraint1 = languageDropdownButton.heightAnchor.constraint(equalToConstant: 32)
+        heightConstraint1.priority = .defaultHigh // 750
+        
+        let trailingConstraint = translateButton.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -8)
+        trailingConstraint.priority = UILayoutPriority(999)
+        
+        let centerYConstraint2 = translateButton.centerYAnchor.constraint(equalTo: centerYAnchor)
+        centerYConstraint2.priority = UILayoutPriority(999)
+        
+        let heightConstraint2 = translateButton.heightAnchor.constraint(equalToConstant: 32)
+        heightConstraint2.priority = .defaultHigh // 750
+        
+        let widthConstraint = translateButton.widthAnchor.constraint(equalToConstant: 60)
+        widthConstraint.priority = UILayoutPriority(999) // ⚡️ 999로 낮춤!
+        
         NSLayoutConstraint.activate([
-            languageDropdownButton.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 8),
-            languageDropdownButton.trailingAnchor.constraint(equalTo: translateButton.leadingAnchor, constant: -8),
-            languageDropdownButton.centerYAnchor.constraint(equalTo: centerYAnchor),
-            languageDropdownButton.heightAnchor.constraint(equalToConstant: 32),
-            
-            translateButton.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -8),
-            translateButton.centerYAnchor.constraint(equalTo: centerYAnchor),
-            translateButton.heightAnchor.constraint(equalToConstant: 32),
-            translateButton.widthAnchor.constraint(equalToConstant: 60)
+            leadingConstraint,
+            trailingToButtonConstraint,
+            centerYConstraint1,
+            heightConstraint1,
+            trailingConstraint,
+            centerYConstraint2,
+            heightConstraint2,
+            widthConstraint
         ])
     }
     
