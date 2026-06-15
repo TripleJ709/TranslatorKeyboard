@@ -33,9 +33,12 @@ class KeyboardViewController: UIInputViewController {
     
     private func setupKeyboardView() {
         keyboardView = KeyboardView()
-        keyboardView.delegate = self
         keyboardView.translatesAutoresizingMaskIntoConstraints = false
         view.addSubview(keyboardView)
+        
+        // Delegate 직접 설정
+        keyboardView.translationBar.delegate = self
+        keyboardView.rowFactory.delegate = self
         
         NSLayoutConstraint.activate([
             keyboardView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
@@ -84,41 +87,55 @@ class KeyboardViewController: UIInputViewController {
     }
 }
 
-// MARK: - KeyboardViewDelegate
+// MARK: - TranslationBarViewDelegate
 
-extension KeyboardViewController: KeyboardViewDelegate {
+extension KeyboardViewController: TranslationBarViewDelegate {
+    func translationBarView(_ view: TranslationBarView, didSelectLanguage language: Language) {
+        // 언어 선택 이벤트는 내부적으로 처리됨
+        print("🌐 [언어 선택] \(language.displayName)")
+    }
     
-    func keyboardView(_ view: KeyboardView, didTapKey key: String) {
+    func translationBarViewDidTapTranslate(_ view: TranslationBarView) {
+        guard let targetLanguage = view.getSelectedLanguage() else { return }
+        print("🌐 [번역] 요청: \(targetLanguage.displayName)")
+        
+        Task {
+            await performTranslation(to: targetLanguage)
+        }
+    }
+}
+
+// MARK: - KeyboardRowActionDelegate
+
+extension KeyboardViewController: KeyboardRowActionDelegate {
+    func keyboardRowFactory(_ factory: KeyboardRowFactory, didTapKey key: String) {
         viewModel.handleKeyTap(key)
     }
     
-    func keyboardViewDidTapShift(_ view: KeyboardView) {
+    func keyboardRowFactoryDidTapShift(_ factory: KeyboardRowFactory) {
         viewModel.handleShiftTap()
     }
     
-    func keyboardViewDidTapDelete(_ view: KeyboardView) {
+    func keyboardRowFactoryDidTapDelete(_ factory: KeyboardRowFactory) {
         viewModel.handleDeleteTap()
     }
     
-    func keyboardViewDidTapSpace(_ view: KeyboardView) {
+    func keyboardRowFactoryDidTapSpace(_ factory: KeyboardRowFactory) {
         viewModel.handleSpaceTap()
     }
     
-    func keyboardViewDidTapReturn(_ view: KeyboardView) {
+    func keyboardRowFactoryDidTapReturn(_ factory: KeyboardRowFactory) {
         viewModel.handleReturnTap()
     }
     
-    func keyboardViewDidTapLanguageSwitch(_ view: KeyboardView) {
+    func keyboardRowFactoryDidTapLanguageSwitch(_ factory: KeyboardRowFactory) {
         viewModel.toggleKeyboardType()
     }
-    
-    func keyboardView(_ view: KeyboardView, didRequestTranslationTo language: Language) {
-        print("🌐 [번역] 요청: \(language.displayName)")
-        
-        Task {
-            await performTranslation(to: language)
-        }
-    }
+}
+
+// MARK: - Translation
+
+extension KeyboardViewController {
     
     @MainActor
     private func performTranslation(to targetLanguage: Language) async {
