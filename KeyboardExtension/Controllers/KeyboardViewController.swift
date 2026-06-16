@@ -26,15 +26,7 @@ class KeyboardViewController: UIInputViewController {
         setupKeyboardView()
         setupViewModel()
         bindViewModelToView()
-        
-        DispatchQueue.main.async { [weak self] in
-            self?.setupLanguageManagerAsync()
-        }
-    }
-    
-    override func viewDidLayoutSubviews() {
-        super.viewDidLayoutSubviews()
-        keyboardView.layoutIfNeeded()
+        setupLanguageManagerAsync()
     }
     
     override func viewWillAppear(_ animated: Bool) {
@@ -67,23 +59,29 @@ class KeyboardViewController: UIInputViewController {
     private func setupKeyboardView() {
         view.backgroundColor = .clear
         inputView?.backgroundColor = .clear
-        
+
         keyboardView = KeyboardView()
         keyboardView.translatesAutoresizingMaskIntoConstraints = false
         view.addSubview(keyboardView)
-        
+
         keyboardView.translationBar.delegate = self
         keyboardView.rowFactory.delegate = self
-        
+
         NSLayoutConstraint.activate([
             keyboardView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
             keyboardView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
             keyboardView.topAnchor.constraint(equalTo: view.topAnchor),
             keyboardView.bottomAnchor.constraint(equalTo: view.bottomAnchor)
         ])
-        
-        view.setNeedsLayout()
-        view.layoutIfNeeded()
+
+        // viewDidLoad 시점에 홈 인디케이터 높이를 선제 적용 → 이후 safeArea 업데이트로 인한 레이아웃 점프 방지
+        keyboardView.updateSafeAreaBottomInset(homeIndicatorHeight)
+    }
+
+    /// 화면 긴 쪽 길이로 홈 인디케이터 유무를 판단 (iPhone X 이상: 34pt, 이하: 0pt)
+    private var homeIndicatorHeight: CGFloat {
+        let longerEdge = max(UIScreen.main.bounds.width, UIScreen.main.bounds.height)
+        return longerEdge >= 812 ? 34 : 0
     }
     
     private func setupViewModel() {

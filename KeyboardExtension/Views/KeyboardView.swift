@@ -55,7 +55,9 @@ final class KeyboardView: UIView {
         let factory = KeyboardRowFactory()
         return factory
     }()
-    
+
+    private var keyboardStackBottomConstraint: NSLayoutConstraint!
+
     // MARK: - Initialization
     
     override init(frame: CGRect) {
@@ -69,6 +71,12 @@ final class KeyboardView: UIView {
     
     func updateAvailableLanguages(_ languages: [Language]) {
         translationBar.updateAvailableLanguages(languages)
+    }
+
+    /// 키보드가 나타날 때 safeAreaLayoutGuide 업데이트로 인한 레이아웃 깜빡임을 방지하기 위해
+    /// 화면 높이 기반으로 미리 계산된 bottom inset을 적용
+    func updateSafeAreaBottomInset(_ inset: CGFloat) {
+        keyboardStackBottomConstraint.constant = -(inset + 5)
     }
     
     func startTranslation() {
@@ -156,11 +164,13 @@ final class KeyboardView: UIView {
             keyboardStackView.topAnchor.constraint(equalTo: toolbarView.bottomAnchor, constant: 6),
             keyboardStackView.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 3),
             keyboardStackView.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -3),
-            keyboardStackView.bottomAnchor.constraint(equalTo: safeAreaLayoutGuide.bottomAnchor, constant: -5)
         ]
-        
+
+        keyboardStackBottomConstraint = keyboardStackView.bottomAnchor.constraint(equalTo: bottomAnchor, constant: -5)
+        keyboardStackBottomConstraint.priority = UILayoutPriority(999)
+
         constraints.forEach { $0.priority = UILayoutPriority(999) }
-        NSLayoutConstraint.activate(constraints)
+        NSLayoutConstraint.activate(constraints + [keyboardStackBottomConstraint])
     }
     
     private func updateKeyboardLayout() {
