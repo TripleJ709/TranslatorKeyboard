@@ -17,7 +17,7 @@ final class KeyboardView: UIView {
         currentKeyboardType == .english ? .english : .korean
     }
     
-    // MARK: - Subviews (Internal for ViewController access)
+    // MARK: - Subviews
     
     lazy var translationBar: TranslationBarView = {
         let view = TranslationBarView()
@@ -73,19 +73,12 @@ final class KeyboardView: UIView {
         translationBar.updateAvailableLanguages(languages)
     }
 
-    /// 키보드가 나타날 때 safeAreaLayoutGuide 업데이트로 인한 레이아웃 깜빡임을 방지하기 위해
-    /// 화면 높이 기반으로 미리 계산된 bottom inset을 적용
     func updateSafeAreaBottomInset(_ inset: CGFloat) {
         keyboardStackBottomConstraint.constant = -(inset + 5)
     }
     
-    func startTranslation() {
-        translationBar.startTranslation()
-    }
-    
-    func finishTranslation(success: Bool) {
-        translationBar.finishTranslation(success: success)
-    }
+    func startTranslation() { translationBar.startTranslation() }
+    func finishTranslation(success: Bool) { translationBar.finishTranslation(success: success) }
 
     func updateKeyboardType(_ type: KeyboardType) {
         currentKeyboardType = type
@@ -93,9 +86,8 @@ final class KeyboardView: UIView {
     }
     
     func updateKeyCase(isUppercase: Bool) {
-        let excludedTags: Set<Int> = [ButtonTag.shift.rawValue, ButtonTag.languageSwitch.rawValue, 
+        let excludedTags: Set<Int> = [ButtonTag.shift.rawValue, ButtonTag.languageSwitch.rawValue,
                                        ButtonTag.space.rawValue, ButtonTag.return.rawValue, ButtonTag.number.rawValue]
-        
         KeyboardButtonHelper.getAllButtons(from: keyboardStackView)
             .filter { !excludedTags.contains($0.tag) }
             .forEach { button in
@@ -108,9 +100,8 @@ final class KeyboardView: UIView {
     func updateKoreanDoubleConsonant(isShift: Bool) {
         let doubleMap: [String: String] = ["ㅂ": "ㅃ", "ㅈ": "ㅉ", "ㄷ": "ㄸ", "ㄱ": "ㄲ", "ㅅ": "ㅆ"]
         let reverseMap = Dictionary(uniqueKeysWithValues: doubleMap.map { ($1, $0) })
-        let excludedTags: Set<Int> = [ButtonTag.shift.rawValue, ButtonTag.languageSwitch.rawValue, 
+        let excludedTags: Set<Int> = [ButtonTag.shift.rawValue, ButtonTag.languageSwitch.rawValue,
                                        ButtonTag.space.rawValue, ButtonTag.return.rawValue, ButtonTag.number.rawValue]
-        
         KeyboardButtonHelper.getAllButtons(from: keyboardStackView)
             .filter { !excludedTags.contains($0.tag) }
             .forEach { button in
@@ -126,7 +117,6 @@ final class KeyboardView: UIView {
     func updateShiftButton(isShift: Bool, isCapsLock: Bool) {
         let shiftButton = KeyboardButtonHelper.getAllButtons(from: keyboardStackView)
             .first { $0.tag == ButtonTag.shift.rawValue }
-        
         let imageName = isCapsLock ? "arrow.up.circle.fill" : (isShift ? "shift.fill" : "shift")
         let config = UIImage.SymbolConfiguration(pointSize: 16)
         shiftButton?.setImage(UIImage(systemName: imageName, withConfiguration: config), for: .normal)
@@ -135,8 +125,6 @@ final class KeyboardView: UIView {
     // MARK: - UI Setup
     
     private func setupUI() {
-        // iOS 기본 키보드 배경색 — 투명으로 두면 홈 인디케이터 구역이 앱 콘텐츠를 비춰
-        // 키보드가 떠 있는 것처럼 보이므로 시스템 키보드와 동일한 배경을 적용
         backgroundColor = UIColor(dynamicProvider: { trait in
             trait.userInterfaceStyle == .dark
                 ? UIColor(white: 0.18, alpha: 1)
@@ -181,7 +169,6 @@ final class KeyboardView: UIView {
     
     private func updateKeyboardLayout() {
         keyboardStackView.arrangedSubviews.forEach { $0.removeFromSuperview() }
-        
         let layout = currentLayout
         keyboardStackView.addArrangedSubview(rowFactory.createFirstRow(with: layout))
         keyboardStackView.addArrangedSubview(rowFactory.createSecondRow(with: layout))

@@ -33,13 +33,14 @@ class KeyboardViewController: UIInputViewController {
         super.viewWillAppear(animated)
         updateKeyboardHeight()
     }
-    
-    override func viewDidAppear(_ animated: Bool) {
-        super.viewDidAppear(animated)
-    }
-    
-    override func viewDidDisappear(_ animated: Bool) {
-        super.viewDidDisappear(animated)
+
+    override func viewSafeAreaInsetsDidChange() {
+        super.viewSafeAreaInsetsDidChange()
+        // 실제 safe area가 확정된 시점에 constraint 업데이트 (애니메이션 없이)
+        UIView.performWithoutAnimation {
+            keyboardView.updateSafeAreaBottomInset(view.safeAreaInsets.bottom)
+            view.layoutIfNeeded()
+        }
     }
     
     private func updateKeyboardHeight() {
@@ -57,8 +58,13 @@ class KeyboardViewController: UIInputViewController {
     // MARK: - Setup
     
     private func setupKeyboardView() {
-        // KeyboardView 자체에 배경색을 적용하므로 view/inputView는 투명 유지
-        view.backgroundColor = .clear
+        let keyboardBgColor = UIColor(dynamicProvider: { trait in
+            trait.userInterfaceStyle == .dark
+                ? UIColor(white: 0.18, alpha: 1)
+                : UIColor(red: 0.82, green: 0.824, blue: 0.843, alpha: 1)
+        })
+        view.backgroundColor = keyboardBgColor
+        inputView?.backgroundColor = keyboardBgColor
 
         keyboardView = KeyboardView()
         keyboardView.translatesAutoresizingMaskIntoConstraints = false
@@ -73,15 +79,6 @@ class KeyboardViewController: UIInputViewController {
             keyboardView.topAnchor.constraint(equalTo: view.topAnchor),
             keyboardView.bottomAnchor.constraint(equalTo: view.bottomAnchor)
         ])
-
-        // viewDidLoad 시점에 홈 인디케이터 높이를 선제 적용 → 이후 safeArea 업데이트로 인한 레이아웃 점프 방지
-        keyboardView.updateSafeAreaBottomInset(homeIndicatorHeight)
-    }
-
-    /// 화면 긴 쪽 길이로 홈 인디케이터 유무를 판단 (iPhone X 이상: 34pt, 이하: 0pt)
-    private var homeIndicatorHeight: CGFloat {
-        let longerEdge = max(UIScreen.main.bounds.width, UIScreen.main.bounds.height)
-        return longerEdge >= 812 ? 34 : 0
     }
     
     private func setupViewModel() {
@@ -132,12 +129,10 @@ class KeyboardViewController: UIInputViewController {
     }
 }
 
-
 // MARK: - TranslationBarViewDelegate
 
 extension KeyboardViewController: TranslationBarViewDelegate {
     func translationBarView(_ view: TranslationBarView, didSelectLanguage language: Language) {
-        // 언어 선택 이벤트는 내부적으로 처리됨
         print("🌐 [언어 선택] \(language.displayName)")
     }
     
@@ -189,19 +184,11 @@ extension KeyboardViewController {
         
         keyboardView.startTranslation()
         
-        print("📋 [번역] documentContextBeforeInput: \(textDocumentProxy.documentContextBeforeInput ?? "nil")")
-        print("📋 [번역] documentContextAfterInput: \(textDocumentProxy.documentContextAfterInput ?? "nil")")
-        print("📋 [번역] selectedText: \(textDocumentProxy.selectedText ?? "nil")")
-        
         guard let selectedText = textDocumentProxy.selectedText, !selectedText.isEmpty else {
             print("⚠️ [번역] 선택된 텍스트가 없습니다")
-            print("💡 [번역] 텍스트를 드래그하여 선택한 후 번역 버튼을 눌러주세요")
-            
             keyboardView.finishTranslation(success: false)
             return
         }
-        
-        print("📝 [번역] 선택된 텍스트: \(selectedText)")
         
         let targetLocaleLanguage = Locale.Language(identifier: targetLanguage.languageCode)
         
@@ -209,41 +196,25 @@ extension KeyboardViewController {
             let sourceLanguageCode = detectLanguage(from: selectedText)
             let sourceLocaleLanguage = Locale.Language(identifier: sourceLanguageCode)
             
-            print("🔍 [번역] 감지된 소스 언어: \(sourceLanguageCode)")
-            
             let session = TranslationSession(
                 installedSource: sourceLocaleLanguage,
                 target: targetLocaleLanguage
             )
             
-            print("⏳ [번역] 번역 중... (\(sourceLanguageCode) → \(targetLanguage.languageCode))")
-            
             let response = try await session.translate(selectedText)
-            let finalText = response.targetText
-            
-            print("✅ [번역] 완료: \(finalText)")
-            
-            textDocumentProxy.insertText(finalText)
+            textDocumentProxy.insertText(response.targetText)
             keyboardView.finishTranslation(success: true)
             
         } catch {
             print("❌ [번역] 에러: \(error.localizedDescription)")
-            
             keyboardView.finishTranslation(success: false)
-            
         }
     }
     
-    /// 텍스트에서 언어 자동 감지
     private func detectLanguage(from text: String) -> String {
         let recognizer = NLLanguageRecognizer()
         recognizer.processString(text)
-        
-        guard let dominantLanguage = recognizer.dominantLanguage else {
-            print("⚠️ [번역] 언어 감지 실패, 기본값 'en' 사용")
-            return "en"
-        }
-        
+        guard let dominantLanguage = recognizer.dominantLanguage else { return "en" }
         return dominantLanguage.rawValue
     }
 }
