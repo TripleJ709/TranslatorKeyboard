@@ -135,8 +135,14 @@ final class KeyboardView: UIView {
     // MARK: - UI Setup
     
     private func setupUI() {
-        backgroundColor = .clear
-        
+        // iOS 기본 키보드 배경색 — 투명으로 두면 홈 인디케이터 구역이 앱 콘텐츠를 비춰
+        // 키보드가 떠 있는 것처럼 보이므로 시스템 키보드와 동일한 배경을 적용
+        backgroundColor = UIColor(dynamicProvider: { trait in
+            trait.userInterfaceStyle == .dark
+                ? UIColor(white: 0.18, alpha: 1)
+                : UIColor(red: 0.82, green: 0.824, blue: 0.843, alpha: 1)
+        })
+
         addSubview(translationBar)
         addSubview(toolbarView)
         toolbarView.addSubview(toolbarLabel)

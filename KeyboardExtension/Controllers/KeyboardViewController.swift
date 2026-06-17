@@ -57,8 +57,8 @@ class KeyboardViewController: UIInputViewController {
     // MARK: - Setup
     
     private func setupKeyboardView() {
+        // KeyboardView 자체에 배경색을 적용하므로 view/inputView는 투명 유지
         view.backgroundColor = .clear
-        inputView?.backgroundColor = .clear
 
         keyboardView = KeyboardView()
         keyboardView.translatesAutoresizingMaskIntoConstraints = false
