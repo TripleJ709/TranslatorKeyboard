@@ -26,48 +26,101 @@ class KeyboardViewController: UIInputViewController {
         setupKeyboardView()
         setupViewModel()
         bindViewModelToView()
-        setupLanguageManager()
+        setupLanguageManagerAsync()
+    }
+    
+    override func viewWillAppear(_ animated: Bool) {
+        super.viewWillAppear(animated)
+        updateKeyboardHeight()
+    }
+    
+    override func viewDidAppear(_ animated: Bool) {
+        super.viewDidAppear(animated)
+    }
+    
+    override func viewDidDisappear(_ animated: Bool) {
+        super.viewDidDisappear(animated)
+    }
+    
+    private func updateKeyboardHeight() {
+        let estimatedHeight: CGFloat = 291
+        
+        if let heightConstraint = view.constraints.first(where: { $0.firstAttribute == .height }) {
+            heightConstraint.constant = estimatedHeight
+        } else {
+            let constraint = view.heightAnchor.constraint(equalToConstant: estimatedHeight)
+            constraint.priority = .defaultHigh
+            constraint.isActive = true
+        }
     }
     
     // MARK: - Setup
     
     private func setupKeyboardView() {
+        // KeyboardView 자체에 배경색을 적용하므로 view/inputView는 투명 유지
+        view.backgroundColor = .clear
+
         keyboardView = KeyboardView()
-        keyboardView.delegate = self
         keyboardView.translatesAutoresizingMaskIntoConstraints = false
         view.addSubview(keyboardView)
-        
+
+        keyboardView.translationBar.delegate = self
+        keyboardView.rowFactory.delegate = self
+
         NSLayoutConstraint.activate([
             keyboardView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
             keyboardView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
             keyboardView.topAnchor.constraint(equalTo: view.topAnchor),
             keyboardView.bottomAnchor.constraint(equalTo: view.bottomAnchor)
         ])
+
+        // viewDidLoad 시점에 홈 인디케이터 높이를 선제 적용 → 이후 safeArea 업데이트로 인한 레이아웃 점프 방지
+        keyboardView.updateSafeAreaBottomInset(homeIndicatorHeight)
+    }
+
+    /// 화면 긴 쪽 길이로 홈 인디케이터 유무를 판단 (iPhone X 이상: 34pt, 이하: 0pt)
+    private var homeIndicatorHeight: CGFloat {
+        let longerEdge = max(UIScreen.main.bounds.width, UIScreen.main.bounds.height)
+        return longerEdge >= 812 ? 34 : 0
     }
     
     private func setupViewModel() {
         viewModel = KeyboardViewModel(textDocumentProxy: textDocumentProxy)
     }
     
-    private func setupLanguageManager() {
-        Task { @MainActor in
-            languageManager = AvailableLanguagesManager.shared
-            await languageManager?.fetchAvailableLanguages()
-            if let languages = languageManager?.availableLanguages {
-                keyboardView.updateAvailableLanguages(languages)
-            } else {
-                print("언어 목록 없음")
+    private func setupLanguageManagerAsync() {
+        Task.detached(priority: .userInitiated) {
+            let manager = AvailableLanguagesManager.shared
+            
+            let cachedLanguages = manager.availableLanguages
+            if !cachedLanguages.isEmpty {
+                await MainActor.run {
+                    self.languageManager = manager
+                    self.keyboardView.updateAvailableLanguages(cachedLanguages)
+                }
+            }
+            
+            await manager.fetchAvailableLanguages()
+            let systemLanguages = manager.availableLanguages
+            
+            await MainActor.run {
+                self.languageManager = manager
+                self.keyboardView.updateAvailableLanguages(systemLanguages)
             }
         }
     }
     
     private func bindViewModelToView() {
         viewModel.$isShiftEnabled
-            .combineLatest(viewModel.$isUppercase)
-            .sink { [weak self] isShift, isCapsLock in
+            .combineLatest(viewModel.$isUppercase, viewModel.$currentKeyboardType)
+            .sink { [weak self] isShift, isCapsLock, keyboardType in
                 let isUppercase = isShift || isCapsLock
                 self?.keyboardView.updateKeyCase(isUppercase: isUppercase)
                 self?.keyboardView.updateShiftButton(isShift: isShift, isCapsLock: isCapsLock)
+                
+                if keyboardType == .korean {
+                    self?.keyboardView.updateKoreanDoubleConsonant(isShift: isShift)
+                }
             }
             .store(in: &cancellables)
         
@@ -79,71 +132,85 @@ class KeyboardViewController: UIInputViewController {
     }
 }
 
-// MARK: - KeyboardViewDelegate
 
-extension KeyboardViewController: KeyboardViewDelegate {
+// MARK: - TranslationBarViewDelegate
+
+extension KeyboardViewController: TranslationBarViewDelegate {
+    func translationBarView(_ view: TranslationBarView, didSelectLanguage language: Language) {
+        // 언어 선택 이벤트는 내부적으로 처리됨
+        print("🌐 [언어 선택] \(language.displayName)")
+    }
     
-    func keyboardView(_ view: KeyboardView, didTapKey key: String) {
+    func translationBarViewDidTapTranslate(_ view: TranslationBarView) {
+        guard let targetLanguage = view.getSelectedLanguage() else { return }
+        print("🌐 [번역] 요청: \(targetLanguage.displayName)")
+        
+        Task {
+            await performTranslation(to: targetLanguage)
+        }
+    }
+}
+
+// MARK: - KeyboardRowActionDelegate
+
+extension KeyboardViewController: KeyboardRowActionDelegate {
+    func keyboardRowFactory(_ factory: KeyboardRowFactory, didTapKey key: String) {
         viewModel.handleKeyTap(key)
     }
     
-    func keyboardViewDidTapShift(_ view: KeyboardView) {
+    func keyboardRowFactoryDidTapShift(_ factory: KeyboardRowFactory) {
         viewModel.handleShiftTap()
     }
     
-    func keyboardViewDidTapDelete(_ view: KeyboardView) {
+    func keyboardRowFactoryDidTapDelete(_ factory: KeyboardRowFactory) {
         viewModel.handleDeleteTap()
     }
     
-    func keyboardViewDidTapSpace(_ view: KeyboardView) {
+    func keyboardRowFactoryDidTapSpace(_ factory: KeyboardRowFactory) {
         viewModel.handleSpaceTap()
     }
     
-    func keyboardViewDidTapReturn(_ view: KeyboardView) {
+    func keyboardRowFactoryDidTapReturn(_ factory: KeyboardRowFactory) {
         viewModel.handleReturnTap()
     }
     
-    func keyboardViewDidTapLanguageSwitch(_ view: KeyboardView) {
+    func keyboardRowFactoryDidTapLanguageSwitch(_ factory: KeyboardRowFactory) {
         viewModel.toggleKeyboardType()
     }
+}
+
+// MARK: - Translation
+
+extension KeyboardViewController {
     
-    func keyboardView(_ view: KeyboardView, didRequestTranslationTo language: Language) {
-        print("🌐 [번역] 요청: \(language.displayName)")
-        
-        Task {
-            await performTranslation(to: language)
-        }
-    }
-    
-    /// 번역 수행
+    @MainActor
     private func performTranslation(to targetLanguage: Language) async {
         print("🚀 [번역] performTranslation 시작")
         
-        // 1. textDocumentProxy 상태 확인
+        keyboardView.startTranslation()
+        
         print("📋 [번역] documentContextBeforeInput: \(textDocumentProxy.documentContextBeforeInput ?? "nil")")
         print("📋 [번역] documentContextAfterInput: \(textDocumentProxy.documentContextAfterInput ?? "nil")")
         print("📋 [번역] selectedText: \(textDocumentProxy.selectedText ?? "nil")")
         
-        // 2. 선택된 텍스트 가져오기
         guard let selectedText = textDocumentProxy.selectedText, !selectedText.isEmpty else {
             print("⚠️ [번역] 선택된 텍스트가 없습니다")
             print("💡 [번역] 텍스트를 드래그하여 선택한 후 번역 버튼을 눌러주세요")
+            
+            keyboardView.finishTranslation(success: false)
             return
         }
         
         print("📝 [번역] 선택된 텍스트: \(selectedText)")
         
-        // 2. Translation 준비
         let targetLocaleLanguage = Locale.Language(identifier: targetLanguage.languageCode)
         
         do {
-            // 3. 소스 언어 자동 감지 (NLLanguageRecognizer 사용 가정)
             let sourceLanguageCode = detectLanguage(from: selectedText)
             let sourceLocaleLanguage = Locale.Language(identifier: sourceLanguageCode)
             
             print("🔍 [번역] 감지된 소스 언어: \(sourceLanguageCode)")
             
-            // 4. Translation Session 생성
             let session = TranslationSession(
                 installedSource: sourceLocaleLanguage,
                 target: targetLocaleLanguage
@@ -151,27 +218,19 @@ extension KeyboardViewController: KeyboardViewDelegate {
             
             print("⏳ [번역] 번역 중... (\(sourceLanguageCode) → \(targetLanguage.languageCode))")
             
-            // 5. 번역 요청 (단일 텍스트 번역 - 에러와 경고 해결의 핵심!)
             let response = try await session.translate(selectedText)
             let finalText = response.targetText
             
             print("✅ [번역] 완료: \(finalText)")
             
-            // 6. 선택된 텍스트를 번역 결과로 교체
-            await MainActor.run {
-                textDocumentProxy.insertText(finalText)
-            }
+            textDocumentProxy.insertText(finalText)
+            keyboardView.finishTranslation(success: true)
             
         } catch {
-            // 이제 try await가 제대로 작동하므로 이 catch 블록도 정상적인 역할을 합니다.
             print("❌ [번역] 에러: \(error.localizedDescription)")
             
-            // Translation Error Code 확인
-            let nsError = error as NSError
-            if nsError.domain == "TranslationErrorDomain" && nsError.code == 11 {
-                print("⚠️ [번역] 번역 언어 모델이 다운로드되지 않음")
-                print("💡 [번역] 설정 → 일반 → 번역에서 '\(detectLanguage(from: selectedText)) ↔ \(targetLanguage.languageCode)' 언어 쌍을 다운로드하세요")
-            }
+            keyboardView.finishTranslation(success: false)
+            
         }
     }
     
