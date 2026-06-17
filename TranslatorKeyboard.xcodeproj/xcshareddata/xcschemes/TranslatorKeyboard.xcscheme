@@ -50,6 +50,9 @@
             ReferencedContainer = "container:TranslatorKeyboard.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>
+      <StoreKitConfigurationFileReference
+         identifier = "../../TranslatorKeyboard/TranslatorKeyboard.storekit">
+      </StoreKitConfigurationFileReference>
    </LaunchAction>
    <ProfileAction
       buildConfiguration = "Release"
