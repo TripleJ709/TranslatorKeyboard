@@ -39,8 +39,13 @@ class MainViewController: UIViewController {
         mainView.supportButton.addTarget(self, action: #selector(supportTapped), for: .touchUpInside)
         mainView.showGuideButton.addTarget(self, action: #selector(showGuideTapped), for: .touchUpInside)
 
-        viewModel.onShowGuideTapped = {
-            // 온보딩 화면으로 이동 예정
+        viewModel.onShowGuideTapped = { [weak self] in
+            let onboarding = OnboardingViewController()
+            onboarding.modalPresentationStyle = .fullScreen
+            onboarding.onComplete = { [weak self] in
+                self?.dismiss(animated: true)
+            }
+            self?.present(onboarding, animated: true)
         }
     }
 

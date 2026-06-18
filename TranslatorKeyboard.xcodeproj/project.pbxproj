@@ -7,17 +7,22 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		5ADC2059AE014A74A1CEBFA3 /* OnboardingPageView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1A4F00FE0D14C0F9C6C072D /* OnboardingPageView.swift */; };
 		89002AF22FC8A2B800ED57FE /* KeyboardExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 89002AEB2FC8A2B800ED57FE /* KeyboardExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		89328BE02FC86BBF005EA87B /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 89328BD62FC86BBF005EA87B /* AppDelegate.swift */; };
 		89328BE12FC86BBF005EA87B /* SceneDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 89328BDD2FC86BBF005EA87B /* SceneDelegate.swift */; };
 		89328BE32FC86BBF005EA87B /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 89328BD72FC86BBF005EA87B /* Assets.xcassets */; };
 		89328BE52FC86BBF005EA87B /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 89328BDA2FC86BBF005EA87B /* LaunchScreen.storyboard */; };
 		89328BE62FC86BBF005EA87B /* Main.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 89328BDC2FC86BBF005EA87B /* Main.storyboard */; };
+		896707BF2FE3EE1B00DCDE91 /* onboarding_how_to_use.gif in Resources */ = {isa = PBXBuildFile; fileRef = 896707BE2FE3EE1B00DCDE91 /* onboarding_how_to_use.gif */; };
 		89ABD95B2FE2B172008EA1E5 /* MainView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 89ABD9542FE2B172008EA1E5 /* MainView.swift */; };
 		89ABD95C2FE2B172008EA1E5 /* MainViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 89ABD9582FE2B172008EA1E5 /* MainViewModel.swift */; };
 		89ABD95D2FE2B172008EA1E5 /* MainViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 89ABD9562FE2B172008EA1E5 /* MainViewController.swift */; };
 		89ABD9622FE2ED7B008EA1E5 /* PurchaseManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 89ABD95E2FE2ED7B008EA1E5 /* PurchaseManager.swift */; };
 		89ABD9642FE2EFAE008EA1E5 /* TranslatorKeyboard.storekit in Resources */ = {isa = PBXBuildFile; fileRef = 89ABD9632FE2EFAE008EA1E5 /* TranslatorKeyboard.storekit */; };
+		A74D1AE775964909AD7E0E77 /* OnboardingViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6B16AFDECA4B4458AE9A2456 /* OnboardingViewController.swift */; };
+		B0999798505A4163ABEE25FE /* OnboardingStep.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA6D991EECFA44E98CF85C4E /* OnboardingStep.swift */; };
+		EE401AB63A334803BAEAE543 /* OnboardingStepViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = BDA8259730F04D3EA477D562 /* OnboardingStepViewController.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -45,6 +50,7 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		6B16AFDECA4B4458AE9A2456 /* OnboardingViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingViewController.swift; sourceTree = "<group>"; };
 		89002AEB2FC8A2B800ED57FE /* KeyboardExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = KeyboardExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		89328BAE2FC6FDDA005EA87B /* TranslatorKeyboard.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = TranslatorKeyboard.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		89328BD62FC86BBF005EA87B /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
@@ -54,11 +60,15 @@
 		89328BDB2FC86BBF005EA87B /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/Main.storyboard; sourceTree = "<group>"; };
 		89328BDD2FC86BBF005EA87B /* SceneDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SceneDelegate.swift; sourceTree = "<group>"; };
 		89328BE72FC870A0005EA87B /* CLAUDE.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = CLAUDE.md; sourceTree = "<group>"; };
+		896707BE2FE3EE1B00DCDE91 /* onboarding_how_to_use.gif */ = {isa = PBXFileReference; lastKnownFileType = image.gif; path = onboarding_how_to_use.gif; sourceTree = "<group>"; };
 		89ABD9542FE2B172008EA1E5 /* MainView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MainView.swift; sourceTree = "<group>"; };
 		89ABD9562FE2B172008EA1E5 /* MainViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MainViewController.swift; sourceTree = "<group>"; };
 		89ABD9582FE2B172008EA1E5 /* MainViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MainViewModel.swift; sourceTree = "<group>"; };
 		89ABD95E2FE2ED7B008EA1E5 /* PurchaseManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PurchaseManager.swift; sourceTree = "<group>"; };
 		89ABD9632FE2EFAE008EA1E5 /* TranslatorKeyboard.storekit */ = {isa = PBXFileReference; lastKnownFileType = text; path = TranslatorKeyboard.storekit; sourceTree = "<group>"; };
+		A1A4F00FE0D14C0F9C6C072D /* OnboardingPageView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingPageView.swift; sourceTree = "<group>"; };
+		BDA8259730F04D3EA477D562 /* OnboardingStepViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingStepViewController.swift; sourceTree = "<group>"; };
+		EA6D991EECFA44E98CF85C4E /* OnboardingStep.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingStep.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
@@ -100,6 +110,14 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		312604762D8B4FEA97D58CB4 /* Views */ = {
+			isa = PBXGroup;
+			children = (
+				A1A4F00FE0D14C0F9C6C072D /* OnboardingPageView.swift */,
+			);
+			path = Views;
+			sourceTree = "<group>";
+		};
 		89328BA52FC6FDDA005EA87B = {
 			isa = PBXGroup;
 			children = (
@@ -122,6 +140,7 @@
 		89328BDF2FC86BBF005EA87B /* TranslatorKeyboard */ = {
 			isa = PBXGroup;
 			children = (
+				896707BE2FE3EE1B00DCDE91 /* onboarding_how_to_use.gif */,
 				89328BD62FC86BBF005EA87B /* AppDelegate.swift */,
 				89328BD72FC86BBF005EA87B /* Assets.xcassets */,
 				89328BD82FC86BBF005EA87B /* Info.plist */,
@@ -131,6 +150,7 @@
 				89ABD9632FE2EFAE008EA1E5 /* TranslatorKeyboard.storekit */,
 				89ABD95F2FE2ED7B008EA1E5 /* Services */,
 				89ABD95A2FE2B172008EA1E5 /* Main */,
+				F378B5E5907F407092E87516 /* Onboarding */,
 			);
 			path = TranslatorKeyboard;
 			sourceTree = "<group>";
@@ -175,6 +195,33 @@
 				89ABD95E2FE2ED7B008EA1E5 /* PurchaseManager.swift */,
 			);
 			path = Services;
+			sourceTree = "<group>";
+		};
+		F378B5E5907F407092E87516 /* Onboarding */ = {
+			isa = PBXGroup;
+			children = (
+				312604762D8B4FEA97D58CB4 /* Views */,
+				F59890E39B924175B5FB86AE /* Controllers */,
+				FDFFD0A810C34BECA7AFC436 /* Models */,
+			);
+			path = Onboarding;
+			sourceTree = "<group>";
+		};
+		F59890E39B924175B5FB86AE /* Controllers */ = {
+			isa = PBXGroup;
+			children = (
+				6B16AFDECA4B4458AE9A2456 /* OnboardingViewController.swift */,
+				BDA8259730F04D3EA477D562 /* OnboardingStepViewController.swift */,
+			);
+			path = Controllers;
+			sourceTree = "<group>";
+		};
+		FDFFD0A810C34BECA7AFC436 /* Models */ = {
+			isa = PBXGroup;
+			children = (
+				EA6D991EECFA44E98CF85C4E /* OnboardingStep.swift */,
+			);
+			path = Models;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -275,6 +322,7 @@
 			files = (
 				89328BE32FC86BBF005EA87B /* Assets.xcassets in Resources */,
 				89ABD9642FE2EFAE008EA1E5 /* TranslatorKeyboard.storekit in Resources */,
+				896707BF2FE3EE1B00DCDE91 /* onboarding_how_to_use.gif in Resources */,
 				89328BE52FC86BBF005EA87B /* LaunchScreen.storyboard in Resources */,
 				89328BE62FC86BBF005EA87B /* Main.storyboard in Resources */,
 			);
@@ -298,6 +346,10 @@
 				89328BE12FC86BBF005EA87B /* SceneDelegate.swift in Sources */,
 				89ABD95B2FE2B172008EA1E5 /* MainView.swift in Sources */,
 				89ABD95C2FE2B172008EA1E5 /* MainViewModel.swift in Sources */,
+				5ADC2059AE014A74A1CEBFA3 /* OnboardingPageView.swift in Sources */,
+				EE401AB63A334803BAEAE543 /* OnboardingStepViewController.swift in Sources */,
+				A74D1AE775964909AD7E0E77 /* OnboardingViewController.swift in Sources */,
+				B0999798505A4163ABEE25FE /* OnboardingStep.swift in Sources */,
 				89ABD9622FE2ED7B008EA1E5 /* PurchaseManager.swift in Sources */,
 				89ABD95D2FE2B172008EA1E5 /* MainViewController.swift in Sources */,
 			);
