@@ -99,32 +99,38 @@ final class KeyboardButton: UIButton {
         case .key:
             setTitleColor(.label, for: .normal)
             titleLabel?.font = .systemFont(ofSize: 23, weight: .regular)
-            backgroundColor = .white
-            
+            backgroundColor = UIColor(dynamicProvider: { trait in
+                trait.userInterfaceStyle == .dark ? UIColor(white: 0.30, alpha: 1) : .white
+            })
+
             let heightConstraint = heightAnchor.constraint(equalToConstant: 42)
             heightConstraint.priority = .defaultHigh
             heightConstraint.isActive = true
-            
+
         case .special:
             setTitleColor(.label, for: .normal)
             tintColor = .label
-            backgroundColor = .systemGray2
+            backgroundColor = UIColor(dynamicProvider: { trait in
+                trait.userInterfaceStyle == .dark ? UIColor(white: 0.18, alpha: 1) : .systemGray2
+            })
             titleLabel?.font = .systemFont(ofSize: 16, weight: .regular)
-            
+
             let heightConstraint = heightAnchor.constraint(equalToConstant: 42)
             heightConstraint.priority = .defaultHigh
             heightConstraint.isActive = true
-            
+
             if let width = width {
                 let widthConstraint = widthAnchor.constraint(equalToConstant: width)
                 widthConstraint.priority = UILayoutPriority(999)
                 widthConstraint.isActive = true
             }
-            
+
         case .space:
             setTitleColor(.label, for: .normal)
             titleLabel?.font = .systemFont(ofSize: 16, weight: .regular)
-            backgroundColor = .white
+            backgroundColor = UIColor(dynamicProvider: { trait in
+                trait.userInterfaceStyle == .dark ? UIColor(white: 0.30, alpha: 1) : .white
+            })
         }
     }
 }
