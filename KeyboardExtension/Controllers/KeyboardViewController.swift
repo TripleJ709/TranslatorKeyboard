@@ -215,6 +215,7 @@ extension KeyboardViewController {
             
             let response = try await session.translate(selectedText)
             textDocumentProxy.insertText(response.targetText)
+            viewModel.resetHangulState()
             keyboardView.finishTranslation(success: true)
             
         } catch {

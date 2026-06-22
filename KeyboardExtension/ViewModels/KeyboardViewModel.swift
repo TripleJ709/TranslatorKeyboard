@@ -148,8 +148,13 @@ final class KeyboardViewModel: ObservableObject {
         textDocumentProxy.insertText("\n")
     }
     
+    func resetHangulState() {
+        hangulAutomata = HangulAutomata()
+        previousBuffer = []
+    }
+
     // MARK: - Keyboard Type Switch
-    
+
     /// 키보드 타입 전환 (영문 ↔ 한글)
     func toggleKeyboardType() {
         hangulAutomata = HangulAutomata()
