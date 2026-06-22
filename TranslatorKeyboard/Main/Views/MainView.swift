@@ -81,20 +81,41 @@ final class MainView: UIView {
         return btn
     }()
 
-    // MARK: - Support
+    // MARK: - Footer
 
-    let supportButton: UIButton = {
-        var config = UIButton.Configuration.filled()
-        config.title = "개발자에게 커피 사주기"
-        config.image = UIImage(systemName: "cup.and.saucer.fill")
-        config.imagePadding = 8
-        config.baseForegroundColor = .white
-        config.baseBackgroundColor = UIColor(red: 0.4, green: 0.24, blue: 0.07, alpha: 1)
-        config.cornerStyle = .large
-        config.contentInsets = NSDirectionalEdgeInsets(top: 14, leading: 20, bottom: 14, trailing: 20)
+    let privacyPolicyButton: UIButton = {
+        var config = UIButton.Configuration.plain()
+        config.title = "개인정보처리방침"
+        config.baseForegroundColor = .secondaryLabel
+        config.contentInsets = NSDirectionalEdgeInsets(top: 8, leading: 12, bottom: 8, trailing: 12)
         let btn = UIButton(configuration: config)
+        btn.titleLabel?.font = .systemFont(ofSize: 13)
         btn.translatesAutoresizingMaskIntoConstraints = false
         return btn
+    }()
+
+    let supportButton: UIButton = {
+        var config = UIButton.Configuration.plain()
+        config.title = "☕ 커피 사주기"
+        config.baseForegroundColor = .tertiaryLabel
+        config.contentInsets = NSDirectionalEdgeInsets(top: 8, leading: 12, bottom: 8, trailing: 12)
+        let btn = UIButton(configuration: config)
+        btn.titleLabel?.font = .systemFont(ofSize: 13)
+        btn.translatesAutoresizingMaskIntoConstraints = false
+        return btn
+    }()
+
+    private lazy var footerStackView: UIStackView = {
+        let divider = UILabel()
+        divider.text = "|"
+        divider.textColor = .quaternaryLabel
+        divider.font = .systemFont(ofSize: 13)
+        let stack = UIStackView(arrangedSubviews: [privacyPolicyButton, divider, supportButton])
+        stack.axis = .horizontal
+        stack.spacing = 4
+        stack.alignment = .center
+        stack.translatesAutoresizingMaskIntoConstraints = false
+        return stack
     }()
 
     // MARK: - Initialization
@@ -119,7 +140,7 @@ final class MainView: UIView {
         addSubview(testSectionLabel)
         addSubview(testFieldContainer)
         addSubview(showGuideButton)
-        addSubview(supportButton)
+        addSubview(footerStackView)
         setupConstraints()
     }
 
@@ -148,15 +169,13 @@ final class MainView: UIView {
             testTextField.leadingAnchor.constraint(equalTo: testFieldContainer.leadingAnchor, constant: 16),
             testTextField.trailingAnchor.constraint(equalTo: testFieldContainer.trailingAnchor, constant: -16),
 
-            showGuideButton.bottomAnchor.constraint(equalTo: supportButton.topAnchor, constant: -20),
+            showGuideButton.bottomAnchor.constraint(equalTo: footerStackView.topAnchor, constant: -20),
             showGuideButton.centerXAnchor.constraint(equalTo: centerXAnchor),
             showGuideButton.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 20),
             showGuideButton.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -20),
 
-            supportButton.bottomAnchor.constraint(equalTo: safeAreaLayoutGuide.bottomAnchor, constant: -12),
-            supportButton.centerXAnchor.constraint(equalTo: centerXAnchor),
-            supportButton.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 20),
-            supportButton.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -20),
+            footerStackView.bottomAnchor.constraint(equalTo: safeAreaLayoutGuide.bottomAnchor, constant: -12),
+            footerStackView.centerXAnchor.constraint(equalTo: centerXAnchor),
         ])
     }
 }
