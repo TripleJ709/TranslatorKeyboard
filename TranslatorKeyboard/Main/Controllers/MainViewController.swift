@@ -38,6 +38,7 @@ class MainViewController: UIViewController {
     private func bindViewModel() {
         mainView.supportButton.addTarget(self, action: #selector(supportTapped), for: .touchUpInside)
         mainView.showGuideButton.addTarget(self, action: #selector(showGuideTapped), for: .touchUpInside)
+        mainView.privacyPolicyButton.addTarget(self, action: #selector(privacyPolicyTapped), for: .touchUpInside)
 
         viewModel.onShowGuideTapped = { [weak self] in
             let onboarding = OnboardingViewController()
@@ -101,6 +102,11 @@ class MainViewController: UIViewController {
 
     @objc private func showGuideTapped() {
         viewModel.handleShowGuideTap()
+    }
+
+    @objc private func privacyPolicyTapped() {
+        guard let url = URL(string: "https://west-femur-068.notion.site/TranslatorKeyboard-387df675b8108001bec7f28c38993031") else { return }
+        UIApplication.shared.open(url)
     }
 
     @objc private func dismissKeyboard() {
