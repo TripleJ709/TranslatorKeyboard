@@ -25,22 +25,6 @@ final class KeyboardView: UIView {
         return view
     }()
     
-    private lazy var toolbarView: UIView = {
-        let view = UIView()
-        view.backgroundColor = .systemGray6
-        view.translatesAutoresizingMaskIntoConstraints = false
-        return view
-    }()
-    
-    private lazy var toolbarLabel: UILabel = {
-        let label = UILabel()
-        label.text = "TranslatorKeyboard"
-        label.font = .systemFont(ofSize: 12)
-        label.textColor = .secondaryLabel
-        label.translatesAutoresizingMaskIntoConstraints = false
-        return label
-    }()
-    
     private lazy var keyboardStackView: UIStackView = {
         let stack = UIStackView()
         stack.axis = .vertical
@@ -132,8 +116,6 @@ final class KeyboardView: UIView {
         })
 
         addSubview(translationBar)
-        addSubview(toolbarView)
-        toolbarView.addSubview(toolbarLabel)
         addSubview(keyboardStackView)
         
         setupConstraints()
@@ -147,15 +129,7 @@ final class KeyboardView: UIView {
             translationBar.trailingAnchor.constraint(equalTo: trailingAnchor),
             translationBar.heightAnchor.constraint(equalToConstant: 44),
             
-            toolbarView.topAnchor.constraint(equalTo: translationBar.bottomAnchor),
-            toolbarView.leadingAnchor.constraint(equalTo: leadingAnchor),
-            toolbarView.trailingAnchor.constraint(equalTo: trailingAnchor),
-            toolbarView.heightAnchor.constraint(equalToConstant: 24),
-            
-            toolbarLabel.leadingAnchor.constraint(equalTo: toolbarView.leadingAnchor, constant: 8),
-            toolbarLabel.centerYAnchor.constraint(equalTo: toolbarView.centerYAnchor),
-            
-            keyboardStackView.topAnchor.constraint(equalTo: toolbarView.bottomAnchor, constant: 6),
+            keyboardStackView.topAnchor.constraint(equalTo: translationBar.bottomAnchor, constant: 6),
             keyboardStackView.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 3),
             keyboardStackView.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -3),
         ]

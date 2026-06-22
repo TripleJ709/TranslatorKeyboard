@@ -31,6 +31,7 @@ class KeyboardViewController: UIInputViewController {
     
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
+        applyKeyboardAppearance()
         updateKeyboardHeight()
     }
 
@@ -43,6 +44,17 @@ class KeyboardViewController: UIInputViewController {
         }
     }
     
+    private func applyKeyboardAppearance() {
+        switch textDocumentProxy.keyboardAppearance {
+        case .dark:
+            overrideUserInterfaceStyle = .dark
+        case .light:
+            overrideUserInterfaceStyle = .light
+        default:
+            overrideUserInterfaceStyle = .unspecified
+        }
+    }
+
     private func updateKeyboardHeight() {
         let estimatedHeight: CGFloat = 291
         
@@ -203,6 +215,7 @@ extension KeyboardViewController {
             
             let response = try await session.translate(selectedText)
             textDocumentProxy.insertText(response.targetText)
+            viewModel.resetHangulState()
             keyboardView.finishTranslation(success: true)
             
         } catch {

@@ -8,10 +8,13 @@
 import UIKit
 
 final class KeyboardRowFactory {
-    
+
     // MARK: - Properties
-    
+
     weak var delegate: KeyboardRowActionDelegate?
+
+    private var deleteInitialTimer: Timer?
+    private var deleteRepeatTimer: Timer?
     
     // MARK: - Row Creation
     
@@ -66,7 +69,8 @@ final class KeyboardRowFactory {
         layout.thirdRowKeys.forEach { row.addArrangedSubview(createKeyButton(key: $0)) }
         
         let deleteButton = createSpecialButton(title: nil, systemImage: "delete.left", width: 44)
-        deleteButton.addTarget(self, action: #selector(deleteTapped), for: .touchUpInside)
+        deleteButton.addTarget(self, action: #selector(deleteButtonDown), for: .touchDown)
+        deleteButton.addTarget(self, action: #selector(deleteButtonUp), for: [.touchUpInside, .touchUpOutside, .touchCancel])
         row.addArrangedSubview(deleteButton)
         
         return row
@@ -151,8 +155,22 @@ final class KeyboardRowFactory {
         delegate?.keyboardRowFactoryDidTapShift(self)
     }
     
-    @objc private func deleteTapped() {
+    @objc private func deleteButtonDown() {
         delegate?.keyboardRowFactoryDidTapDelete(self)
+        deleteInitialTimer = Timer.scheduledTimer(withTimeInterval: 0.4, repeats: false) { [weak self] _ in
+            guard let self else { return }
+            self.deleteRepeatTimer = Timer.scheduledTimer(withTimeInterval: 0.1, repeats: true) { [weak self] _ in
+                guard let self else { return }
+                self.delegate?.keyboardRowFactoryDidTapDelete(self)
+            }
+        }
+    }
+
+    @objc private func deleteButtonUp() {
+        deleteInitialTimer?.invalidate()
+        deleteInitialTimer = nil
+        deleteRepeatTimer?.invalidate()
+        deleteRepeatTimer = nil
     }
     
     @objc private func spaceTapped() {
