@@ -8,9 +8,9 @@
 import StoreKit
 
 enum CoffeeProduct: String, CaseIterable {
-    case americano = "com.jang.TranslatorKeyboard.coffee.americano"
-    case latte     = "com.jang.TranslatorKeyboard.coffee.latte"
-    case starbucks = "com.jang.TranslatorKeyboard.coffee.starbucks"
+    case americano = "com.jang.TranslatorKeyboard.donation.americano"
+    case latte     = "com.jang.TranslatorKeyboard.donation.latte"
+    case starbucks = "com.jang.TranslatorKeyboard.donation.starbucks"
 }
 
 final class PurchaseManager {
