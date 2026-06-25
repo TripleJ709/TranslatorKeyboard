@@ -35,6 +35,14 @@ class KeyboardViewController: UIInputViewController {
         updateKeyboardHeight()
     }
 
+    override func textDidChange(_ textInput: UITextInput?) {
+        super.textDidChange(textInput)
+        let context = textDocumentProxy.documentContextBeforeInput ?? ""
+        if context.isEmpty {
+            viewModel.resetHangulState()
+        }
+    }
+
     override func viewSafeAreaInsetsDidChange() {
         super.viewSafeAreaInsetsDidChange()
         // 실제 safe area가 확정된 시점에 constraint 업데이트 (애니메이션 없이)
