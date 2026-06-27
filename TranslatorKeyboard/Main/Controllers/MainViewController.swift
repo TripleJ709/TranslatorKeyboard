@@ -78,6 +78,12 @@ class MainViewController: UIViewController {
         }
 
         alert.addAction(UIAlertAction(title: "취소", style: .cancel))
+
+        if let popover = alert.popoverPresentationController {
+            popover.sourceView = mainView.supportButton
+            popover.sourceRect = mainView.supportButton.bounds
+        }
+
         present(alert, animated: true)
     }
 
